@@ -34,7 +34,7 @@ func New(log zerolog.Logger, adder CartAdder, provider common.ProductProvider) *
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "additem").Logger()
+	localLog := h.log.With().Str("handler", "add_item").Logger()
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil || userID == 0 {

@@ -3,7 +3,7 @@ package config
 import "github.com/ilyakaznacheev/cleanenv"
 
 type CartConfig struct {
-	Address         string `env:"CART_ADDR" env-default:"localhost:8080"`
+	Address         string `env:"CART_ADDR" env-default:"localhost:8082"`
 	LoggerLVL       string `env:"CART_LOG_LVL" env-default:"info"`
 	ProductProvider ProductProviderCfg
 }

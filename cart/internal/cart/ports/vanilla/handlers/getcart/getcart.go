@@ -37,7 +37,7 @@ func New(log zerolog.Logger, adder CartRetriever, provider common.ProductProvide
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "getcart").Logger()
+	localLog := h.log.With().Str("handler", "get_cart").Logger()
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil {
@@ -117,7 +117,7 @@ func calcCart(ctx context.Context, provider common.ProductProvider, itemSKUs []m
 	wg.Wait()
 
 	sort.Slice(cart.Items, func(i, j int) bool {
-		return cart.Items[i].SkuId > cart.Items[j].SkuId
+		return cart.Items[i].SkuId < cart.Items[j].SkuId
 	})
 
 	return cart, nil

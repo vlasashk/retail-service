@@ -7,6 +7,7 @@ import (
 	"route256/cart/internal/cart/ports/vanilla/handlers/additem"
 	"route256/cart/internal/cart/ports/vanilla/handlers/common"
 	"route256/cart/internal/cart/ports/vanilla/handlers/getcart"
+	"route256/cart/internal/cart/ports/vanilla/handlers/removecart"
 	"route256/cart/internal/cart/ports/vanilla/handlers/removeitem"
 	"route256/cart/pkg/logger"
 
@@ -14,11 +15,12 @@ import (
 )
 
 type Resources struct {
-	Log       zerolog.Logger
-	Adder     additem.CartAdder
-	Deleter   removeitem.CartDeleter
-	Retriever getcart.CartRetriever
-	Provider  common.ProductProvider
+	Log         zerolog.Logger
+	Adder       additem.CartAdder
+	ItemRemover removeitem.ItemRemover
+	CartRemover removecart.CartRemover
+	Retriever   getcart.CartRetriever
+	Provider    common.ProductProvider
 }
 
 func NewResources(cfg config.CartConfig) (Resources, error) {
@@ -33,7 +35,8 @@ func NewResources(cfg config.CartConfig) (Resources, error) {
 	inMemStorage := inmem.NewStorage()
 
 	resources.Adder = inMemStorage
-	resources.Deleter = inMemStorage
+	resources.ItemRemover = inMemStorage
+	resources.CartRemover = inMemStorage
 	resources.Retriever = inMemStorage
 
 	resources.Provider = prodservice.New(cfg.ProductProvider, log)
