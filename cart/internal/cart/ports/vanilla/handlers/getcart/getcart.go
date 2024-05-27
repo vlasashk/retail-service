@@ -13,6 +13,7 @@ import (
 	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/ports/vanilla/handlers/common"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
+	"route256/cart/pkg/constants"
 
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
@@ -41,23 +42,27 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil {
-		errhandle.NewErr("invalid path value").Send(w, localLog, http.StatusBadRequest)
+		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	itemSKUs, err := h.retriever.GetItemsByUserID(r.Context(), userID)
 	if err != nil {
-		errhandle.NewErr("failed to get items").Send(w, localLog, http.StatusInternalServerError)
+		if errors.Is(err, models.ErrCartIsEmpty) {
+			errhandle.NewErr(constants.ErrEmptyCart).Send(w, localLog, http.StatusNotFound)
+			return
+		}
+		errhandle.NewErr(constants.ErrGetItems).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 
 	cart, err := calcCart(r.Context(), h.productProvider, itemSKUs)
 	if err != nil {
 		if errors.Is(err, models.ErrCartIsEmpty) {
-			errhandle.NewErr("cart is empty or doesn't exist").Send(w, localLog, http.StatusNotFound)
+			errhandle.NewErr(constants.ErrEmptyCart).Send(w, localLog, http.StatusNotFound)
 			return
 		}
-		errhandle.NewErr("failed to get cart").Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrCartCheckout).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 
@@ -65,7 +70,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data, err := json.Marshal(cartResp)
 	if err != nil {
-		errhandle.NewErr("failed to unmarshal body").Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrMarshal).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 

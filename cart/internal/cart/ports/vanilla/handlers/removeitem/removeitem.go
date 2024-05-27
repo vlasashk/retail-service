@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
+	"route256/cart/pkg/constants"
 
 	"github.com/rs/zerolog"
 )
@@ -31,18 +32,18 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil || userID == 0 {
-		errhandle.NewErr("invalid user_id").Send(w, localLog, http.StatusBadRequest)
+		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	skuID, err := strconv.ParseInt(r.PathValue("sku_id"), 10, 64)
 	if err != nil || skuID == 0 {
-		errhandle.NewErr("invalid sku_id").Send(w, localLog, http.StatusBadRequest)
+		errhandle.NewErr(constants.ErrInvalidSKUID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	if err = h.itemRemover.DeleteItem(r.Context(), userID, skuID); err != nil {
-		errhandle.NewErr("failed to remove item").Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrRemoveItem).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 

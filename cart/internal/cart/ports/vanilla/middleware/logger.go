@@ -38,7 +38,8 @@ func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handl
 					logResp.Info().Send()
 				}
 			}(time.Now())
-			next.ServeHTTP(ww, r)
+
+			next.ServeHTTP(ww, r.WithContext(logger.WithContext(r.Context())))
 		})
 	}
 }

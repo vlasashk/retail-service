@@ -31,6 +31,7 @@ func NewServer(cfg config.CartConfig) (*http.Server, error) {
 
 func addRoutes(mux *muxer.MyMux, resources resources.Resources) {
 	mux.Use(middleware.LoggingMiddleware(resources.Log))
+	mux.Use(middleware.Recover)
 
 	mux.Handle("POST /user/{user_id}/cart/{sku_id}", additem.New(resources.Log, resources.Adder, resources.Provider))
 	mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.ItemRemover))

@@ -11,6 +11,7 @@ import (
 	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/ports/vanilla/handlers/common"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
+	"route256/cart/pkg/constants"
 
 	"github.com/rs/zerolog"
 )
@@ -38,13 +39,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil || userID == 0 {
-		errhandle.NewErr("invalid user_id").Send(w, localLog, http.StatusBadRequest)
+		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	skuID, err := strconv.ParseInt(r.PathValue("sku_id"), 10, 64)
 	if err != nil || skuID == 0 {
-		errhandle.NewErr("invalid sku_id").Send(w, localLog, http.StatusBadRequest)
+		errhandle.NewErr(constants.ErrInvalidSKUID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
@@ -55,34 +56,34 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
-		errhandle.NewErr("failed to read body").Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrReadBody).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 	var count itemCountReq
 
 	err = json.Unmarshal(data, &count)
 	if err != nil {
-		errhandle.NewErr("failed to unmarshal body").Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrUnmarshal).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 
 	if count.Count == 0 {
-		errhandle.NewErr("invalid amount of products").Send(w, localLog, http.StatusBadRequest)
+		errhandle.NewErr(constants.ErrBadCount).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.productProvider.GetProduct(r.Context(), skuID)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			errhandle.NewErr("product not found").Send(w, localLog, http.StatusPreconditionFailed)
+			errhandle.NewErr(constants.ErrItemNotFound).Send(w, localLog, http.StatusPreconditionFailed)
 			return
 		}
-		errhandle.NewErr("failed to get product").Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrGetItem).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 
 	if err = h.adder.AddItem(r.Context(), userID, skuID, count.Count); err != nil {
-		errhandle.NewErr("failed to add item").Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrAddItem).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 
