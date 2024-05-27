@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"runtime/debug"
 
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
 	"route256/cart/pkg/constants"
@@ -14,13 +15,13 @@ func Recover(next http.Handler) http.Handler {
 		logger := *zerolog.Ctx(r.Context())
 
 		defer func() {
-			if isPanic := recover(); isPanic != nil {
-				errhandle.NewErr(constants.ErrInternalError).Send(w, logger, http.StatusInternalServerError)
-				if isPanic == http.ErrAbortHandler {
-					panic(isPanic)
+			if err := recover(); err != nil {
+				if err == http.ErrAbortHandler {
+					panic(err)
 				}
-				logger.Panic().Any("panic", isPanic).Send()
-
+				logger.Error().Any("panic", err).Bytes("stack", debug.Stack()).Send()
+				errhandle.NewErr(constants.ErrInternalError).Send(w, logger, http.StatusInternalServerError)
+				return
 			}
 		}()
 
