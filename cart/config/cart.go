@@ -11,6 +11,7 @@ type CartConfig struct {
 type ProductProviderCfg struct {
 	Address     string `env:"PRODUCT_SERVICE_ADDR" env-default:"http://route256.pavl.uk:8080"`
 	AccessToken string `env:"PRODUCT_SERVICE_TOKEN" env-default:"testtoken"`
+	Retries     int    `env:"PRODUCT_SERVICE_RETRIES" env-default:"3"`
 }
 
 func NewCartCfg() (CartConfig, error) {

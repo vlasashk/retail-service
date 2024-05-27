@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"route256/cart/config"
+	"route256/cart/internal/cart/adapters/prodservice/roundtripper"
 	"route256/cart/internal/cart/models"
 
 	"github.com/rs/zerolog"
@@ -25,8 +26,10 @@ func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client {
 	return &Client{
 		baseURL: cfg.Address,
 		token:   cfg.AccessToken,
-		client:  &http.Client{},
-		log:     log,
+		client: &http.Client{
+			Transport: roundtripper.Retry(cfg.Retries)(http.DefaultTransport),
+		},
+		log: log,
 	}
 }
 
