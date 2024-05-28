@@ -27,7 +27,7 @@ func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client {
 		baseURL: cfg.Address,
 		token:   cfg.AccessToken,
 		client: &http.Client{
-			Transport: roundtripper.Retry(cfg.Retries)(http.DefaultTransport),
+			Transport: roundtripper.Retry(log, cfg.Retries)(http.DefaultTransport),
 		},
 		log: log,
 	}
@@ -43,16 +43,19 @@ func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescript
 
 	data, err := json.Marshal(reqBody)
 	if err != nil {
+		c.log.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(data))
 	if err != nil {
+		c.log.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
+		c.log.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 	defer func() {
@@ -70,11 +73,13 @@ func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescript
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		c.log.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 
 	var respBody getProductResp
 	if err = json.Unmarshal(body, &respBody); err != nil {
+		c.log.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 

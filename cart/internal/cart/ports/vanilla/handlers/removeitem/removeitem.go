@@ -33,17 +33,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil || userID == 0 {
+		localLog.Error().Err(err).Int64("user_id", userID).Send()
 		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	skuID, err := strconv.ParseInt(r.PathValue("sku_id"), 10, 64)
 	if err != nil || skuID == 0 {
+		localLog.Error().Err(err).Int64("sku_id", skuID).Send()
 		errhandle.NewErr(constants.ErrInvalidSKUID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	if err = h.itemRemover.DeleteItem(r.Context(), userID, skuID); err != nil {
+		localLog.Error().Err(err).Send()
 		errhandle.NewErr(constants.ErrRemoveItem).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}

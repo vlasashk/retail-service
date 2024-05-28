@@ -43,12 +43,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil || userID <= 0 {
+		localLog.Error().Err(err).Int64("user_id", userID).Send()
 		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	itemSKUs, err := h.retriever.GetItemsByUserID(r.Context(), userID)
 	if err != nil {
+		localLog.Error().Err(err).Send()
 		if errors.Is(err, models.ErrCartIsEmpty) {
 			errhandle.NewErr(constants.ErrEmptyCart).Send(w, localLog, http.StatusNotFound)
 			return
@@ -59,6 +61,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cart, err := calcCart(r.Context(), h.productProvider, itemSKUs)
 	if err != nil {
+		localLog.Error().Err(err).Send()
 		if errors.Is(err, models.ErrCartIsEmpty) {
 			errhandle.NewErr(constants.ErrEmptyCart).Send(w, localLog, http.StatusNotFound)
 			return
@@ -71,6 +74,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	data, err := json.Marshal(cartResp)
 	if err != nil {
+		localLog.Error().Err(err).Send()
 		errhandle.NewErr(constants.ErrMarshal).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}

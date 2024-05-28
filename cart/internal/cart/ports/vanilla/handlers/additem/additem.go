@@ -40,12 +40,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
 	if err != nil || userID <= 0 {
+		localLog.Error().Err(err).Int64("user_id", userID).Send()
 		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	skuID, err := strconv.ParseInt(r.PathValue("sku_id"), 10, 64)
 	if err != nil || skuID <= 0 {
+		localLog.Error().Err(err).Int64("sku_id", skuID).Send()
 		errhandle.NewErr(constants.ErrInvalidSKUID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
@@ -57,6 +59,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
+		localLog.Error().Err(err).Send()
 		errhandle.NewErr(constants.ErrReadBody).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
@@ -64,17 +67,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal(data, &count)
 	if err != nil {
+		localLog.Error().Err(err).Send()
 		errhandle.NewErr(constants.ErrUnmarshal).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 
 	if count.Count == 0 {
+		localLog.Error().Str("error", constants.ErrBadCount).Send()
 		errhandle.NewErr(constants.ErrBadCount).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	_, err = h.productProvider.GetProduct(r.Context(), skuID)
 	if err != nil {
+		localLog.Error().Err(err).Send()
 		if errors.Is(err, models.ErrNotFound) {
 			errhandle.NewErr(constants.ErrItemNotFound).Send(w, localLog, http.StatusPreconditionFailed)
 			return
@@ -84,6 +90,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err = h.adder.AddItem(r.Context(), userID, skuID, count.Count); err != nil {
+		localLog.Error().Err(err).Send()
 		errhandle.NewErr(constants.ErrAddItem).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
