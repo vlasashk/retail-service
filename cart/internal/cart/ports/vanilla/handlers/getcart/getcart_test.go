@@ -57,7 +57,7 @@ func TestGetCartHandler(t *testing.T) {
 		{
 			name:       "GetCartWrongUserID",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(userID int64) {},
+			mockSetUp:  func(_ int64) {},
 			userID:     -1,
 			expectResp: `{"error":"invalid user_id value"}`,
 		},

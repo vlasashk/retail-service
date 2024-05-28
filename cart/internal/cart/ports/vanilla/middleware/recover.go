@@ -15,11 +15,12 @@ func Recover(next http.Handler) http.Handler {
 		logger := *zerolog.Ctx(r.Context())
 
 		defer func() {
-			if err := recover(); err != nil {
-				if err == http.ErrAbortHandler {
-					panic(err)
+			if rec := recover(); rec != nil {
+				//nolint:errorlint // rec is not an error type
+				if rec == http.ErrAbortHandler {
+					panic(rec)
 				}
-				logger.Error().Any("panic", err).Bytes("stack", debug.Stack()).Send()
+				logger.Error().Any("panic", rec).Bytes("stack", debug.Stack()).Send()
 				errhandle.NewErr(constants.ErrInternalError).Send(w, logger, http.StatusInternalServerError)
 				return
 			}
