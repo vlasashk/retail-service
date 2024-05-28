@@ -24,22 +24,19 @@ type Resources struct {
 }
 
 func NewResources(cfg config.CartConfig) (Resources, error) {
-	resources := Resources{}
-
 	log, err := logger.New(cfg.LoggerLVL)
 	if err != nil {
 		return Resources{}, err
 	}
-	resources.Log = log
 
 	inMemStorage := inmem.NewStorage()
 
-	resources.Adder = inMemStorage
-	resources.ItemRemover = inMemStorage
-	resources.CartRemover = inMemStorage
-	resources.Retriever = inMemStorage
-
-	resources.Provider = prodservice.New(cfg.ProductProvider, log)
-
-	return resources, nil
+	return Resources{
+		Log:         log,
+		Adder:       inMemStorage,
+		ItemRemover: inMemStorage,
+		CartRemover: inMemStorage,
+		Retriever:   inMemStorage,
+		Provider:    prodservice.New(cfg.ProductProvider, log),
+	}, nil
 }

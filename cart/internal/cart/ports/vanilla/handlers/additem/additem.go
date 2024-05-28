@@ -16,6 +16,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
+//go:generate mockery --name=CartAdder
 type CartAdder interface {
 	AddItem(ctx context.Context, userID, skuID int64, count uint16) error
 }
@@ -38,13 +39,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	localLog := h.log.With().Str("handler", "add_item").Logger()
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
-	if err != nil || userID == 0 {
+	if err != nil || userID <= 0 {
 		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	skuID, err := strconv.ParseInt(r.PathValue("sku_id"), 10, 64)
-	if err != nil || skuID == 0 {
+	if err != nil || skuID <= 0 {
 		errhandle.NewErr(constants.ErrInvalidSKUID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}

@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+//go:generate mockery --name=CartRetriever
 type CartRetriever interface {
 	GetItemsByUserID(ctx context.Context, userID int64) ([]models.Item, error)
 }
@@ -29,9 +30,9 @@ type Handler struct {
 	log             zerolog.Logger
 }
 
-func New(log zerolog.Logger, adder CartRetriever, provider common.ProductProvider) *Handler {
+func New(log zerolog.Logger, retriever CartRetriever, provider common.ProductProvider) *Handler {
 	return &Handler{
-		retriever:       adder,
+		retriever:       retriever,
 		productProvider: provider,
 		log:             log,
 	}
@@ -41,7 +42,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	localLog := h.log.With().Str("handler", "get_cart").Logger()
 
 	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
-	if err != nil {
+	if err != nil || userID <= 0 {
 		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
@@ -108,9 +109,12 @@ func calcCart(ctx context.Context, provider common.ProductProvider, itemSKUs []m
 			ctx, cancel := context.WithTimeout(gCtx, time.Second*2)
 			defer cancel()
 			itemInfo, err := provider.GetProduct(ctx, item.SkuId)
+			if err != nil {
+				return err
+			}
 			item.Info = itemInfo
 			itemChan <- item
-			return err
+			return nil
 		})
 	}
 	if err := eg.Wait(); err != nil {
