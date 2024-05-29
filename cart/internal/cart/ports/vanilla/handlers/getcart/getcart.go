@@ -6,14 +6,14 @@ import (
 	"errors"
 	"net/http"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
-	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
+	"route256/cart/internal/cart/models/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/common"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
+	"route256/cart/internal/cart/utils/converter"
 
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
@@ -41,10 +41,10 @@ func New(log zerolog.Logger, retriever CartRetriever, provider common.ProductPro
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	localLog := h.log.With().Str("handler", "get_cart").Logger()
 
-	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
-	if err != nil || userID <= 0 {
-		localLog.Error().Err(err).Int64("user_id", userID).Send()
-		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
+	userID, err := converter.UserToInt(r.PathValue(constants.PathArgUserID))
+	if err != nil {
+		localLog.Error().Err(err).Str(constants.PathArgUserID, r.PathValue(constants.PathArgUserID)).Send()
+		errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
@@ -75,7 +75,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(cartResp)
 	if err != nil {
 		localLog.Error().Err(err).Send()
-		errhandle.NewErr(constants.ErrMarshal).Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrJsonProcessing).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 

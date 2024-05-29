@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"strconv"
 
-	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
+	"route256/cart/internal/cart/models/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
+	"route256/cart/internal/cart/utils/converter"
 
 	"github.com/rs/zerolog"
 )
@@ -32,10 +32,10 @@ func New(log zerolog.Logger, remover CartRemover) *Handler {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	localLog := h.log.With().Str("handler", "remove_cart").Logger()
 
-	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
-	if err != nil || userID == 0 {
-		localLog.Error().Err(err).Int64("user_id", userID).Send()
-		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
+	userID, err := converter.UserToInt(r.PathValue(constants.PathArgUserID))
+	if err != nil {
+		localLog.Error().Err(err).Str(constants.PathArgUserID, r.PathValue(constants.PathArgUserID)).Send()
+		errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 

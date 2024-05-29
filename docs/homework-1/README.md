@@ -210,7 +210,7 @@ Response
   - POST   /user/<user_id>/cart/<sku_id>
   - DELETE /user/<user_id>/cart/<sku_id>
   - DELETE /user/<user_id>/cart
-  - GET    /user/<user_id>/cart
+  - GET    /user/<user_id>/cart/list
 - методы реализуют заявленную бизнес логику
 - методы валидируют запросы и отдают описанный в спецификации коды ошибок
 - информация о пользователях и их состоянии корзины хранится в памяти приложения

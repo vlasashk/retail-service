@@ -11,7 +11,9 @@ import (
 	"route256/cart/config"
 	"route256/cart/internal/cart/adapters/prodservice/roundtripper"
 	"route256/cart/internal/cart/models"
+	"route256/cart/internal/cart/models/constants"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog"
 )
 
@@ -71,7 +73,11 @@ func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescript
 		return models.ItemDescription{}, fmt.Errorf("failed to fetch item: status %d", resp.StatusCode)
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	return c.validateProductResp(resp.Body)
+}
+
+func (c *Client) validateProductResp(resp io.Reader) (models.ItemDescription, error) {
+	body, err := io.ReadAll(resp)
 	if err != nil {
 		c.log.Error().Err(err).Send()
 		return models.ItemDescription{}, err
@@ -81,6 +87,11 @@ func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescript
 	if err = json.Unmarshal(body, &respBody); err != nil {
 		c.log.Error().Err(err).Send()
 		return models.ItemDescription{}, err
+	}
+
+	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(respBody); err != nil {
+		c.log.Error().Err(err).Str("error", constants.ErrBadProductInfo).Send()
+		return models.ItemDescription{}, models.ErrBadProductData
 	}
 
 	return models.ItemDescription{

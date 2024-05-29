@@ -6,13 +6,14 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strconv"
 
-	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
+	"route256/cart/internal/cart/models/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/common"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
+	"route256/cart/internal/cart/utils/converter"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog"
 )
 
@@ -38,17 +39,11 @@ func New(log zerolog.Logger, adder CartAdder, provider common.ProductProvider) *
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	localLog := h.log.With().Str("handler", "add_item").Logger()
 
-	userID, err := strconv.ParseInt(r.PathValue("user_id"), 10, 64)
-	if err != nil || userID <= 0 {
-		localLog.Error().Err(err).Int64("user_id", userID).Send()
-		errhandle.NewErr(constants.ErrInvalidUserID).Send(w, localLog, http.StatusBadRequest)
-		return
-	}
-
-	skuID, err := strconv.ParseInt(r.PathValue("sku_id"), 10, 64)
-	if err != nil || skuID <= 0 {
-		localLog.Error().Err(err).Int64("sku_id", skuID).Send()
-		errhandle.NewErr(constants.ErrInvalidSKUID).Send(w, localLog, http.StatusBadRequest)
+	userID, errUserID := converter.UserToInt(r.PathValue(constants.PathArgUserID))
+	skuID, errSKUiD := converter.SKUtoInt(r.PathValue(constants.PathArgSKU))
+	if err := errors.Join(errUserID, errSKUiD); err != nil {
+		localLog.Error().Err(err).Str(constants.PathArgUserID, r.PathValue(constants.PathArgUserID)).Str(constants.PathArgSKU, r.PathValue(constants.PathArgSKU)).Send()
+		errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
@@ -68,11 +63,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(data, &count)
 	if err != nil {
 		localLog.Error().Err(err).Send()
-		errhandle.NewErr(constants.ErrUnmarshal).Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrJsonProcessing).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 
-	if count.Count == 0 {
+	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(count); err != nil {
 		localLog.Error().Str("error", constants.ErrBadCount).Send()
 		errhandle.NewErr(constants.ErrBadCount).Send(w, localLog, http.StatusBadRequest)
 		return

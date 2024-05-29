@@ -6,6 +6,6 @@ type getProductReq struct {
 }
 
 type getProductResp struct {
-	Name  string `json:"name"`
-	Price uint32 `json:"price"`
+	Name  string `json:"name" validate:"required"`
+	Price uint32 `json:"price" validate:"required,gt=0"`
 }
