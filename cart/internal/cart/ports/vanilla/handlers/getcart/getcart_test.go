@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
-	"strings"
 	"testing"
 
 	"route256/cart/internal/cart/models"
@@ -21,11 +20,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type mocksToUse struct {
+	Retriever *mockRetriever.CartRetriever
+	Provider  *mockProvider.ProductProvider
+}
+
+func initMocks(t *testing.T) *mocksToUse {
+	return &mocksToUse{
+		Retriever: mockRetriever.NewCartRetriever(t),
+		Provider:  mockProvider.NewProductProvider(t),
+	}
+}
+
 func TestGetCartHandler(t *testing.T) {
 	url := "http://example.com/user/%d/cart/list"
-
-	retriever := mockRetriever.NewCartRetriever(t)
-	provider := mockProvider.NewProductProvider(t)
 
 	testItem := models.Item{
 		SkuId: 1000,
@@ -38,18 +46,17 @@ func TestGetCartHandler(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		mockSetUp  func(int64)
+		mockSetUp  func(*mocksToUse, int64)
 		expectCode int
 		userID     int64
-		wantBody   assert.ComparisonAssertionFunc
 		expectResp string
 	}{
 		{
 			name:       "GetCartHandlerSuccess",
 			expectCode: http.StatusOK,
-			mockSetUp: func(userID int64) {
-				retriever.On("GetItemsByUserID", mock.Anything, userID).Return([]models.Item{testItem, testItem}, nil).Once()
-				provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(testItem.Info, nil).Twice()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return([]models.Item{testItem, testItem}, nil).Once()
+				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(testItem.Info, nil).Twice()
 			},
 			userID:     999,
 			expectResp: `{"items":[{"sku_id":1000,"name":"TEST","count":5,"price":1000},{"sku_id":1000,"name":"TEST","count":5,"price":1000}],"total_price":10000}`,
@@ -57,15 +64,15 @@ func TestGetCartHandler(t *testing.T) {
 		{
 			name:       "GetCartWrongUserID",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(_ int64) {},
+			mockSetUp:  func(_ *mocksToUse, _ int64) {},
 			userID:     -1,
 			expectResp: `{"error":"invalid user_id value"}`,
 		},
 		{
 			name:       "GetCartIsEmpty",
 			expectCode: http.StatusNotFound,
-			mockSetUp: func(userID int64) {
-				retriever.On("GetItemsByUserID", mock.Anything, userID).Return(nil, models.ErrCartIsEmpty).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(nil, models.ErrCartIsEmpty).Once()
 			},
 			userID:     999,
 			expectResp: `{"error":"cart is empty or doesn't exist"}`,
@@ -73,8 +80,8 @@ func TestGetCartHandler(t *testing.T) {
 		{
 			name:       "GetCartRetrieverErr",
 			expectCode: http.StatusInternalServerError,
-			mockSetUp: func(userID int64) {
-				retriever.On("GetItemsByUserID", mock.Anything, userID).Return(nil, errors.New("any err")).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(nil, errors.New("any err")).Once()
 			},
 			userID:     13,
 			expectResp: `{"error":"failed to get items"}`,
@@ -82,9 +89,9 @@ func TestGetCartHandler(t *testing.T) {
 		{
 			name:       "GetCartProductDoesntExist",
 			expectCode: http.StatusNotFound,
-			mockSetUp: func(userID int64) {
-				retriever.On("GetItemsByUserID", mock.Anything, userID).Return([]models.Item{testItem}, nil).Once()
-				provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, models.ErrCartIsEmpty).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return([]models.Item{testItem}, nil).Once()
+				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, models.ErrCartIsEmpty).Once()
 			},
 			userID:     42,
 			expectResp: `{"error":"cart is empty or doesn't exist"}`,
@@ -92,9 +99,9 @@ func TestGetCartHandler(t *testing.T) {
 		{
 			name:       "GetCartProviderErr",
 			expectCode: http.StatusInternalServerError,
-			mockSetUp: func(userID int64) {
-				retriever.On("GetItemsByUserID", mock.Anything, userID).Return([]models.Item{testItem}, nil).Once()
-				provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, errors.New("any error")).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return([]models.Item{testItem}, nil).Once()
+				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, errors.New("any error")).Once()
 			},
 			userID:     1,
 			expectResp: `{"error":"failed to checkout cart"}`,
@@ -103,12 +110,15 @@ func TestGetCartHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			mocks := initMocks(t)
+
 			r := httptest.NewRequest("GET", fmt.Sprintf(url, tt.userID), nil)
 			r.SetPathValue("user_id", strconv.Itoa(int(tt.userID)))
 			w := httptest.NewRecorder()
-			tt.mockSetUp(tt.userID)
+			tt.mockSetUp(mocks, tt.userID)
 
-			handler := getcart.New(zerolog.Logger{}, retriever, provider)
+			handler := getcart.New(zerolog.Logger{}, mocks.Retriever, mocks.Provider)
 			handler.ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectCode, w.Code)
@@ -117,8 +127,7 @@ func TestGetCartHandler(t *testing.T) {
 			require.NoError(t, err)
 			_ = resp.Body.Close()
 
-			bodyActual := strings.TrimSpace(string(body))
-			assert.Equal(t, tt.expectResp, bodyActual)
+			assert.JSONEq(t, tt.expectResp, string(body))
 		})
 	}
 }

@@ -83,31 +83,35 @@ func TestServerLoggingOK(t *testing.T) {
 		},
 	}
 
-	var buf bytes.Buffer
-	testLogger := zerolog.New(&buf).With().Timestamp().Logger()
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			var buf bytes.Buffer
+			testLogger := zerolog.New(&buf).With().Timestamp().Logger()
 
-	for _, test := range testCases {
-		req, err := http.NewRequest("GET", "/test?value=hello", nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		req.Header.Set("User-Agent", "Test")
-		req.Header.Set("Accept", "text/plain")
+			req, err := http.NewRequest("GET", "/test?value=hello", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("User-Agent", "Test")
+			req.Header.Set("Accept", "text/plain")
 
-		ww := httptest.NewRecorder()
-		wrappedHandler := middleware.LoggingMiddleware(testLogger)(test.handler)
-		wrappedHandler.ServeHTTP(ww, req)
+			ww := httptest.NewRecorder()
+			wrappedHandler := middleware.LoggingMiddleware(testLogger)(tt.handler)
+			wrappedHandler.ServeHTTP(ww, req)
 
-		assert.Equal(t, test.expectedStatus, ww.Code)
-		assert.Equal(t, test.body, ww.Body.String())
-		assert.Equal(t, "text/plain", ww.Header().Get("Content-Type"))
+			assert.Equal(t, tt.expectedStatus, ww.Code)
+			assert.Equal(t, tt.body, ww.Body.String())
+			assert.Equal(t, "text/plain", ww.Header().Get("Content-Type"))
 
-		logOutput := buf.String()
-		println(logOutput)
-		assert.Contains(t, logOutput, `"method":"GET"`)
-		assert.Contains(t, logOutput, `"path":"/test"`)
-		assert.Contains(t, logOutput, `"query":"value=hello"`)
-		test.asserts(logOutput)
-		buf.Reset()
+			logOutput := buf.String()
+			println(logOutput)
+			assert.Contains(t, logOutput, `"method":"GET"`)
+			assert.Contains(t, logOutput, `"path":"/test"`)
+			assert.Contains(t, logOutput, `"query":"value=hello"`)
+			tt.asserts(logOutput)
+			buf.Reset()
+		})
+
 	}
 }
