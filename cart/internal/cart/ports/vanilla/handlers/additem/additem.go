@@ -63,7 +63,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(data, &count)
 	if err != nil {
 		localLog.Error().Err(err).Send()
-		errhandle.NewErr(constants.ErrJsonProcessing).Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(constants.ErrJsonProcessing).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 

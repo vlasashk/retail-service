@@ -62,8 +62,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cart, err := calcCart(r.Context(), h.productProvider, itemSKUs)
 	if err != nil {
 		localLog.Error().Err(err).Send()
-		if errors.Is(err, models.ErrCartIsEmpty) {
-			errhandle.NewErr(constants.ErrEmptyCart).Send(w, localLog, http.StatusNotFound)
+		if errors.Is(err, models.ErrNotFound) {
+			errhandle.NewErr(constants.ErrItemNotFound).Send(w, localLog, http.StatusPreconditionFailed)
 			return
 		}
 		errhandle.NewErr(constants.ErrCartCheckout).Send(w, localLog, http.StatusInternalServerError)
@@ -112,10 +112,12 @@ func calcCart(ctx context.Context, provider common.ProductProvider, itemSKUs []m
 		eg.Go(func() error {
 			ctx, cancel := context.WithTimeout(gCtx, time.Second*2)
 			defer cancel()
+
 			itemInfo, err := provider.GetProduct(ctx, item.SkuId)
 			if err != nil {
 				return err
 			}
+
 			item.Info = itemInfo
 			itemChan <- item
 			return nil
