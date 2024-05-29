@@ -75,7 +75,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongUserID",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(m *mocksToUse, _ int64) {},
+			mockSetUp:  func(_ *mocksToUse, _ int64) {},
 			userID:     -1,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
@@ -84,7 +84,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongSKUid",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(m *mocksToUse, _ int64) {},
+			mockSetUp:  func(_ *mocksToUse, _ int64) {},
 			userID:     999,
 			skuID:      -1,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
@@ -93,7 +93,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongUserIDAndSKUid",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(m *mocksToUse, _ int64) {},
+			mockSetUp:  func(_ *mocksToUse, _ int64) {},
 			userID:     -1,
 			skuID:      -1,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
@@ -102,7 +102,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongCount",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(m *mocksToUse, _ int64) {},
+			mockSetUp:  func(_ *mocksToUse, _ int64) {},
 			userID:     1,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":0}`)),
@@ -111,7 +111,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemBadCountBody",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(m *mocksToUse, _ int64) {},
+			mockSetUp:  func(_ *mocksToUse, _ int64) {},
 			userID:     1,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":-10}`)),
@@ -154,7 +154,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemReaderErr",
 			expectCode: http.StatusInternalServerError,
-			mockSetUp:  func(m *mocksToUse, _ int64) {},
+			mockSetUp:  func(_ *mocksToUse, _ int64) {},
 			userID:     1,
 			skuID:      1000,
 			body:       &errorReader{},
