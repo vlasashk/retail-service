@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
+	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/ports/vanilla/handlers/common"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
-	"route256/cart/pkg/constants"
 
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
