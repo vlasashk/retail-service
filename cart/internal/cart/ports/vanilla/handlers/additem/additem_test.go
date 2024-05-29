@@ -54,7 +54,7 @@ func TestAddItemHandler(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		mockSetUp  func(*mocksToUse, int64, int64)
+		mockSetUp  func(*mocksToUse, int64)
 		expectCode int
 		userID     int64
 		skuID      int64
@@ -64,8 +64,8 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemHandlerSuccess",
 			expectCode: http.StatusOK,
-			mockSetUp: func(m *mocksToUse, userID, skuID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, skuID, testItem.Count).Return(nil).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(nil).Once()
 				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(testItem.Info, nil).Once()
 			},
 			userID: 999,
@@ -75,7 +75,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongUserID",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(_ *mocksToUse, _, _ int64) {},
+			mockSetUp:  func(m *mocksToUse, _ int64) {},
 			userID:     -1,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
@@ -84,7 +84,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongSKUid",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(_ *mocksToUse, _, _ int64) {},
+			mockSetUp:  func(m *mocksToUse, _ int64) {},
 			userID:     999,
 			skuID:      -1,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
@@ -93,7 +93,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongUserIDAndSKUid",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(_ *mocksToUse, _, _ int64) {},
+			mockSetUp:  func(m *mocksToUse, _ int64) {},
 			userID:     -1,
 			skuID:      -1,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
@@ -102,7 +102,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemWrongCount",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(_ *mocksToUse, _, _ int64) {},
+			mockSetUp:  func(m *mocksToUse, _ int64) {},
 			userID:     1,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":0}`)),
@@ -111,7 +111,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemBadCountBody",
 			expectCode: http.StatusBadRequest,
-			mockSetUp:  func(_ *mocksToUse, _, _ int64) {},
+			mockSetUp:  func(m *mocksToUse, _ int64) {},
 			userID:     1,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":-10}`)),
@@ -120,7 +120,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemProductDoesntExist",
 			expectCode: http.StatusPreconditionFailed,
-			mockSetUp: func(m *mocksToUse, userID, skuID int64) {
+			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, models.ErrNotFound).Once()
 			},
 			userID:     42,
@@ -131,8 +131,8 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemAdderErr",
 			expectCode: http.StatusInternalServerError,
-			mockSetUp: func(m *mocksToUse, userID, skuID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, skuID, testItem.Count).Return(errors.New("any error")).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(errors.New("any error")).Once()
 				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(testItem.Info, nil).Once()
 			},
 			userID:     13,
@@ -143,7 +143,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemProviderErr",
 			expectCode: http.StatusInternalServerError,
-			mockSetUp: func(m *mocksToUse, userID, skuID int64) {
+			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, errors.New("any error")).Once()
 			},
 			userID:     1,
@@ -154,7 +154,7 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemReaderErr",
 			expectCode: http.StatusInternalServerError,
-			mockSetUp:  func(_ *mocksToUse, _, _ int64) {},
+			mockSetUp:  func(m *mocksToUse, _ int64) {},
 			userID:     1,
 			skuID:      1000,
 			body:       &errorReader{},
@@ -171,7 +171,7 @@ func TestAddItemHandler(t *testing.T) {
 			r.SetPathValue(constants.PathArgUserID, strconv.Itoa(int(tt.userID)))
 			r.SetPathValue(constants.PathArgSKU, strconv.Itoa(int(tt.skuID)))
 			w := httptest.NewRecorder()
-			tt.mockSetUp(mocks, tt.userID, tt.skuID)
+			tt.mockSetUp(mocks, tt.userID)
 
 			handler := additem.New(zerolog.Logger{}, mocks.Adder, mocks.Provider)
 			handler.ServeHTTP(w, r)
