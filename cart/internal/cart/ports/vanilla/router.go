@@ -6,6 +6,7 @@ import (
 	"route256/cart/config"
 	"route256/cart/internal/cart/ports/vanilla/handlers/additem"
 	"route256/cart/internal/cart/ports/vanilla/handlers/getcart"
+	"route256/cart/internal/cart/ports/vanilla/handlers/healthz"
 	"route256/cart/internal/cart/ports/vanilla/handlers/removecart"
 	"route256/cart/internal/cart/ports/vanilla/handlers/removeitem"
 	"route256/cart/internal/cart/ports/vanilla/middleware"
@@ -37,4 +38,5 @@ func addRoutes(mux *muxer.MyMux, resources resources.Resources) {
 	mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.ItemRemover))
 	mux.Handle("DELETE /user/{user_id}/cart", removecart.New(resources.Log, resources.CartRemover))
 	mux.Handle("GET /user/{user_id}/cart/list", getcart.New(resources.Log, resources.Retriever, resources.Provider))
+	mux.HandleFunc("GET /healthz", healthz.HealthCheck)
 }
