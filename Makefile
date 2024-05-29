@@ -5,5 +5,6 @@ build-all:
 run-all: build-all
 	docker-compose up --force-recreate --build -d
 
-lint:
-	golangci-lint run -c .golangci.yaml ./cart/...
+down:
+	docker-compose down
+
