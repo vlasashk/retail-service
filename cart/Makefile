@@ -6,8 +6,7 @@ lint:
 	golangci-lint run -c .golangci.yaml ./...
 
 coverage:
-	go test -coverprofile=cover.out ./... && \
+	go test -cover ./... -coverprofile cover.out  && \
     go tool cover -html=cover.out -o cover.html && \
     open cover.html && \
     rm cover.out
-
