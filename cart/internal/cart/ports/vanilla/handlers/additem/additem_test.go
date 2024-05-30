@@ -181,7 +181,7 @@ func TestAddItemHandler(t *testing.T) {
 			body, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
 			_ = resp.Body.Close()
-			if len(body) > 0 {
+			if len(body) > 0 || len(tt.expectResp) > 0 {
 				assert.JSONEq(t, tt.expectResp, string(body))
 			}
 		})
