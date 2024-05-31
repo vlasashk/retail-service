@@ -14,7 +14,6 @@ import (
 	"route256/cart/internal/cart/models/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/additem"
 	mockAdder "route256/cart/internal/cart/ports/vanilla/handlers/additem/mocks"
-	mockProvider "route256/cart/internal/cart/ports/vanilla/handlers/common/mocks"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -23,8 +22,7 @@ import (
 )
 
 type mocksToUse struct {
-	Adder    *mockAdder.CartAdder
-	Provider *mockProvider.ProductProvider
+	Adder *mockAdder.CartAdder
 }
 
 type errorReader struct{}
@@ -35,8 +33,7 @@ func (e *errorReader) Read(_ []byte) (n int, err error) {
 
 func initMocks(t *testing.T) *mocksToUse {
 	return &mocksToUse{
-		Adder:    mockAdder.NewCartAdder(t),
-		Provider: mockProvider.NewProductProvider(t),
+		Adder: mockAdder.NewCartAdder(t),
 	}
 }
 
@@ -66,7 +63,6 @@ func TestAddItemHandler(t *testing.T) {
 			expectCode: http.StatusOK,
 			mockSetUp: func(m *mocksToUse, userID int64) {
 				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(nil).Once()
-				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(testItem.Info, nil).Once()
 			},
 			userID: 999,
 			skuID:  1000,
@@ -120,8 +116,8 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemProductDoesntExist",
 			expectCode: http.StatusPreconditionFailed,
-			mockSetUp: func(m *mocksToUse, _ int64) {
-				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, models.ErrNotFound).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(models.ErrNotFound).Once()
 			},
 			userID:     42,
 			skuID:      1000,
@@ -133,7 +129,6 @@ func TestAddItemHandler(t *testing.T) {
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
 				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(errors.New("any error")).Once()
-				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(testItem.Info, nil).Once()
 			},
 			userID:     13,
 			skuID:      1000,
@@ -143,8 +138,8 @@ func TestAddItemHandler(t *testing.T) {
 		{
 			name:       "AddItemProviderErr",
 			expectCode: http.StatusInternalServerError,
-			mockSetUp: func(m *mocksToUse, _ int64) {
-				m.Provider.On("GetProduct", mock.Anything, testItem.SkuId).Return(models.ItemDescription{}, errors.New("any error")).Once()
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(models.ErrItemProvider).Once()
 			},
 			userID:     1,
 			skuID:      1000,
@@ -173,7 +168,7 @@ func TestAddItemHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			tt.mockSetUp(mocks, tt.userID)
 
-			handler := additem.New(zerolog.Logger{}, mocks.Adder, mocks.Provider)
+			handler := additem.New(zerolog.Logger{}, mocks.Adder)
 			handler.ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectCode, w.Code)

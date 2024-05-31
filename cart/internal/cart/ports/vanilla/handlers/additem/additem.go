@@ -9,7 +9,6 @@ import (
 
 	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/models/constants"
-	"route256/cart/internal/cart/ports/vanilla/handlers/common"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
 	"route256/cart/internal/cart/utils/converter"
 
@@ -23,16 +22,14 @@ type CartAdder interface {
 }
 
 type Handler struct {
-	adder           CartAdder
-	productProvider common.ProductProvider
-	log             zerolog.Logger
+	adder CartAdder
+	log   zerolog.Logger
 }
 
-func New(log zerolog.Logger, adder CartAdder, provider common.ProductProvider) *Handler {
+func New(log zerolog.Logger, adder CartAdder) *Handler {
 	return &Handler{
-		adder:           adder,
-		productProvider: provider,
-		log:             log,
+		adder: adder,
+		log:   log,
 	}
 }
 
@@ -73,20 +70,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.productProvider.GetProduct(r.Context(), skuID)
-	if err != nil {
-		localLog.Error().Err(err).Send()
-		if errors.Is(err, models.ErrNotFound) {
-			errhandle.NewErr(constants.ErrItemNotFound).Send(w, localLog, http.StatusPreconditionFailed)
-			return
-		}
-		errhandle.NewErr(constants.ErrGetItem).Send(w, localLog, http.StatusInternalServerError)
-		return
-	}
-
 	if err = h.adder.AddItem(r.Context(), userID, skuID, count.Count); err != nil {
 		localLog.Error().Err(err).Send()
-		errhandle.NewErr(constants.ErrAddItem).Send(w, localLog, http.StatusInternalServerError)
+		switch {
+		case errors.Is(err, models.ErrNotFound):
+			errhandle.NewErr(constants.ErrItemNotFound).Send(w, localLog, http.StatusPreconditionFailed)
+		case errors.Is(err, models.ErrItemProvider):
+			errhandle.NewErr(constants.ErrGetItem).Send(w, localLog, http.StatusInternalServerError)
+		default:
+			errhandle.NewErr(constants.ErrAddItem).Send(w, localLog, http.StatusInternalServerError)
+		}
 		return
 	}
 

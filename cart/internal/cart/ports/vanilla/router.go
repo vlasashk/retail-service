@@ -34,9 +34,9 @@ func addRoutes(mux *muxer.MyMux, resources resources.Resources) {
 	mux.Use(middleware.LoggingMiddleware(resources.Log))
 	mux.Use(middleware.Recover)
 
-	mux.Handle("POST /user/{user_id}/cart/{sku_id}", additem.New(resources.Log, resources.Adder, resources.Provider))
-	mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.ItemRemover))
-	mux.Handle("DELETE /user/{user_id}/cart", removecart.New(resources.Log, resources.CartRemover))
-	mux.Handle("GET /user/{user_id}/cart/list", getcart.New(resources.Log, resources.Retriever, resources.Provider))
+	mux.Handle("POST /user/{user_id}/cart/{sku_id}", additem.New(resources.Log, resources.UseCase))
+	mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.UseCase))
+	mux.Handle("DELETE /user/{user_id}/cart", removecart.New(resources.Log, resources.UseCase))
+	mux.Handle("GET /user/{user_id}/cart/list", getcart.New(resources.Log, resources.UseCase))
 	mux.HandleFunc("GET /healthz", healthz.HealthCheck)
 }
