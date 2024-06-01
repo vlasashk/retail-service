@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"route256/cart/internal/cart/models/constants"
+	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/removeitem"
 	mockRemover "route256/cart/internal/cart/ports/vanilla/handlers/removeitem/mocks"
 
@@ -91,8 +91,8 @@ func TestRemoveCartHandler(t *testing.T) {
 			mocks := initMocks(t)
 
 			r := httptest.NewRequest("DELETE", fmt.Sprintf(url, tt.userID, tt.skuID), nil)
-			r.SetPathValue(constants.PathArgUserID, strconv.Itoa(int(tt.userID)))
-			r.SetPathValue(constants.PathArgSKU, strconv.Itoa(int(tt.skuID)))
+			r.SetPathValue(constants.UserID, strconv.Itoa(int(tt.userID)))
+			r.SetPathValue(constants.SKUid, strconv.Itoa(int(tt.skuID)))
 			w := httptest.NewRecorder()
 			tt.mockSetUp(mocks, tt.userID, tt.skuID)
 

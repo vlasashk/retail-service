@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -12,10 +13,19 @@ import (
 func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var requestBody []byte
+			if r.Body != nil {
+				bodyBytes, err := io.ReadAll(r.Body)
+				if err == nil {
+					requestBody = bodyBytes
+					r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+				}
+			}
 			logger.Info().
 				Str("method", r.Method).
 				Str("path", r.URL.Path).
 				Str("query", r.URL.RawQuery).
+				Bytes("body", requestBody).
 				Any("headers", r.Header).
 				Send()
 			ww := &statusWriter{

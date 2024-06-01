@@ -14,7 +14,7 @@ import (
 	"route256/cart/internal/cart/ports/vanilla/resources"
 )
 
-func NewServer(cfg config.CartConfig) (*http.Server, error) {
+func NewServer(cfg config.Config) (*http.Server, error) {
 	mux := muxer.NewMyMux()
 
 	res, err := resources.NewResources(cfg)

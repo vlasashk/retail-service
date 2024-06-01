@@ -7,8 +7,8 @@ import (
 	"io"
 	"net/http"
 
+	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
-	"route256/cart/internal/cart/models/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
 	"route256/cart/internal/cart/utils/converter"
 
@@ -36,53 +36,72 @@ func New(log zerolog.Logger, adder CartAdder) *Handler {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	localLog := h.log.With().Str("handler", "add_item").Logger()
 
-	userID, errUserID := converter.UserToInt(r.PathValue(constants.PathArgUserID))
-	skuID, errSKUiD := converter.SKUtoInt(r.PathValue(constants.PathArgSKU))
-	if err := errors.Join(errUserID, errSKUiD); err != nil {
-		localLog.Error().Err(err).Str(constants.PathArgUserID, r.PathValue(constants.PathArgUserID)).Str(constants.PathArgSKU, r.PathValue(constants.PathArgSKU)).Send()
-		errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)
-		return
-	}
-
-	data, err := io.ReadAll(r.Body)
-	defer func() {
-		if err = r.Body.Close(); err != nil {
-			localLog.Error().Err(err).Send()
+	// Логирование внутри парсера
+	reqData, err := parseDataFromReq(localLog, r)
+	if err != nil {
+		switch {
+		case errors.Is(err, models.ErrInvalidSKUID) || errors.Is(err, models.ErrInvalidUserID) ||
+			errors.Is(err, models.ErrJSONProcessing) || errors.Is(err, models.ErrBadCount):
+			errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)
+		case errors.Is(err, models.ErrReadBody):
+			errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusInternalServerError)
+		default:
+			errhandle.NewErr(models.ErrAddItem.Error()).Send(w, localLog, http.StatusInternalServerError)
 		}
-	}()
-	if err != nil {
-		localLog.Error().Err(err).Send()
-		errhandle.NewErr(constants.ErrReadBody).Send(w, localLog, http.StatusInternalServerError)
-		return
-	}
-	var count itemCountReq
-
-	err = json.Unmarshal(data, &count)
-	if err != nil {
-		localLog.Error().Err(err).Send()
-		errhandle.NewErr(constants.ErrJsonProcessing).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
-	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(count); err != nil {
-		localLog.Error().Str("error", constants.ErrBadCount).Send()
-		errhandle.NewErr(constants.ErrBadCount).Send(w, localLog, http.StatusBadRequest)
-		return
-	}
-
-	if err = h.adder.AddItem(r.Context(), userID, skuID, count.Count); err != nil {
+	if err = h.adder.AddItem(r.Context(), reqData.UserID, reqData.SKUid, reqData.Count); err != nil {
 		localLog.Error().Err(err).Send()
 		switch {
 		case errors.Is(err, models.ErrNotFound):
-			errhandle.NewErr(constants.ErrItemNotFound).Send(w, localLog, http.StatusPreconditionFailed)
+			errhandle.NewErr(models.ErrItemNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)
 		case errors.Is(err, models.ErrItemProvider):
-			errhandle.NewErr(constants.ErrGetItem).Send(w, localLog, http.StatusInternalServerError)
+			errhandle.NewErr(models.ErrItemProvider.Error()).Send(w, localLog, http.StatusInternalServerError)
 		default:
-			errhandle.NewErr(constants.ErrAddItem).Send(w, localLog, http.StatusInternalServerError)
+			errhandle.NewErr(models.ErrAddItem.Error()).Send(w, localLog, http.StatusInternalServerError)
 		}
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+}
+
+func parseDataFromReq(log zerolog.Logger, r *http.Request) (itemCountReq, error) {
+	var itemData itemCountReq
+
+	data, err := io.ReadAll(r.Body)
+	defer func() {
+		if err = r.Body.Close(); err != nil {
+			log.Error().Err(err).Send()
+		}
+	}()
+	if err != nil {
+		log.Error().Err(err).Send()
+		return itemCountReq{}, models.ErrReadBody
+	}
+
+	err = json.Unmarshal(data, &itemData)
+	if err != nil {
+		log.Error().Err(err).Send()
+		return itemCountReq{}, models.ErrJSONProcessing
+	}
+
+	userID, errUserID := converter.UserToInt(r.PathValue(constants.UserID))
+	skuID, errSKUiD := converter.SKUtoInt(r.PathValue(constants.SKUid))
+	if err = errors.Join(errUserID, errSKUiD); err != nil {
+		log.Error().Err(err).Str(constants.UserID, r.PathValue(constants.UserID)).Send()
+		return itemCountReq{}, err
+	}
+
+	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(itemData); err != nil {
+		log.Error().Err(err).Send()
+		return itemCountReq{}, models.ErrBadCount
+	}
+
+	itemData.UserID = userID
+	itemData.SKUid = skuID
+
+	return itemData, nil
 }

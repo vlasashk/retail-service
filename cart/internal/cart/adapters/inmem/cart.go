@@ -43,7 +43,7 @@ func (c *cart) getItems() []models.Item {
 	res := make([]models.Item, 0, len(c.items))
 
 	for skuID, count := range c.items {
-		res = append(res, models.Item{SkuId: skuID, Count: count})
+		res = append(res, models.Item{SkuID: skuID, Count: count})
 	}
 
 	return res

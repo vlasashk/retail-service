@@ -12,7 +12,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	cfg, err := config.NewCartCfg()
+	cfg, err := config.New()
 	if err != nil {
 		log.Fatal().Err(err).Send()
 	}

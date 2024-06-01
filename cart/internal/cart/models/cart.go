@@ -1,6 +1,6 @@
 package models
 
-type Cart struct {
+type ItemsInCart struct {
 	Items      []Item
 	TotalPrice uint32
 }

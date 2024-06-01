@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"route256/cart/internal/cart/models/constants"
+	"route256/cart/internal/cart/models"
 
 	"github.com/rs/zerolog"
 )
@@ -24,6 +24,6 @@ func (resp ErrResp) Send(w http.ResponseWriter, log zerolog.Logger, code int) {
 	w.WriteHeader(code)
 
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		log.Error().Err(err).Msg(constants.ErrJsonProcessing)
+		log.Error().Err(err).Msg(models.ErrJSONProcessing.Error())
 	}
 }

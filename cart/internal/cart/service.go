@@ -18,7 +18,7 @@ import (
 
 const gracefulTimeout = 10 * time.Second
 
-func Run(ctx context.Context, cfg config.CartConfig) error {
+func Run(ctx context.Context, cfg config.Config) error {
 	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 

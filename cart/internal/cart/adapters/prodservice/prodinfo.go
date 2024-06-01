@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"route256/cart/config"
 	"route256/cart/internal/cart/adapters/prodservice/roundtripper"
 	"route256/cart/internal/cart/models"
-	"route256/cart/internal/cart/models/constants"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog"
@@ -29,7 +29,8 @@ func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client {
 		baseURL: cfg.Address,
 		token:   cfg.AccessToken,
 		client: &http.Client{
-			Transport: roundtripper.Retry(log, cfg.Retries)(http.DefaultTransport),
+			Transport: roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry)(http.DefaultTransport),
+			Timeout:   time.Duration(cfg.Timeout) * time.Second,
 		},
 		log: log,
 	}
@@ -90,7 +91,7 @@ func (c *Client) validateProductResp(resp io.Reader) (models.ItemDescription, er
 	}
 
 	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(respBody); err != nil {
-		c.log.Error().Err(err).Str("error", constants.ErrBadProductInfo).Send()
+		c.log.Error().Err(err).Str("error", models.ErrBadProductInfo.Error()).Send()
 		return models.ItemDescription{}, models.ErrBadProductData
 	}
 

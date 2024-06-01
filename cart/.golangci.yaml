@@ -16,10 +16,31 @@ linters:
     - nilnil # Checks that there is no simultaneous return of nil error and an invalid value.
     - nolintlint # Reports ill-formed or insufficient nolint directives.
     - zerologlint # Detects the wrong usage of zerolog that a user forgets to dispatch with Send or Msg.
+    - stylecheck
+    - unconvert
+    - unparam
+    - unused
+    - goconst
+    - gocritic
+    - gocyclo
+    - govet
+    - prealloc
+
 linters-settings:
+  gocyclo:
+    min-complexity: 20
+  gocognit:
+    min-complexity: 30
+  dupl:
+    threshold: 200
+  nakedret:
+    max-func-lines: 50
+  funlen:
+    lines: 80
+    statements: 50
   errcheck:
     check-type-assertions: true
-    check-blank: false
+    check-blank: true
   exhaustive:
     # Program elements to check for exhaustiveness.
     # Default: [ switch ]

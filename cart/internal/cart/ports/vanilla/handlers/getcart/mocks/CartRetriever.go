@@ -16,22 +16,22 @@ type CartRetriever struct {
 }
 
 // GetItemsByUserID provides a mock function with given fields: ctx, userID
-func (_m *CartRetriever) GetItemsByUserID(ctx context.Context, userID int64) (models.Cart, error) {
+func (_m *CartRetriever) GetItemsByUserID(ctx context.Context, userID int64) (models.ItemsInCart, error) {
 	ret := _m.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetItemsByUserID")
 	}
 
-	var r0 models.Cart
+	var r0 models.ItemsInCart
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64) (models.Cart, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int64) (models.ItemsInCart, error)); ok {
 		return rf(ctx, userID)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int64) models.Cart); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, int64) models.ItemsInCart); ok {
 		r0 = rf(ctx, userID)
 	} else {
-		r0 = ret.Get(0).(models.Cart)
+		r0 = ret.Get(0).(models.ItemsInCart)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {

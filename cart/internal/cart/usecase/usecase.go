@@ -81,22 +81,22 @@ func (uc *UseCase) DeleteItemsByUserID(ctx context.Context, userID int64) error 
 	return uc.cartRemover.DeleteItemsByUserID(ctx, userID)
 }
 
-func (uc *UseCase) GetItemsByUserID(ctx context.Context, userID int64) (models.Cart, error) {
+func (uc *UseCase) GetItemsByUserID(ctx context.Context, userID int64) (models.ItemsInCart, error) {
 	itemSKUs, err := uc.retriever.GetItemsByUserID(ctx, userID)
 	if err != nil {
-		return models.Cart{}, err
+		return models.ItemsInCart{}, err
 	}
 
 	cart, err := calcCart(ctx, uc.provider, itemSKUs)
 	if err != nil {
-		return models.Cart{}, err
+		return models.ItemsInCart{}, err
 	}
 
 	return cart, nil
 }
 
-func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.Item) (models.Cart, error) {
-	cart := models.Cart{
+func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.Item) (models.ItemsInCart, error) {
+	cart := models.ItemsInCart{
 		Items:      make([]models.Item, 0, len(itemSKUs)),
 		TotalPrice: 0,
 	}
@@ -122,7 +122,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
 			ctx, cancel := context.WithTimeout(gCtx, time.Second*2)
 			defer cancel()
 
-			itemInfo, err := provider.GetProduct(ctx, item.SkuId)
+			itemInfo, err := provider.GetProduct(ctx, item.SkuID)
 			if err != nil {
 				return err
 			}
@@ -134,14 +134,14 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
 	}
 	if err := eg.Wait(); err != nil {
 		close(itemChan)
-		return models.Cart{}, err
+		return models.ItemsInCart{}, err
 	}
 
 	close(itemChan)
 	wg.Wait()
 
 	sort.Slice(cart.Items, func(i, j int) bool {
-		return cart.Items[i].SkuId < cart.Items[j].SkuId
+		return cart.Items[i].SkuID < cart.Items[j].SkuID
 	})
 
 	return cart, nil

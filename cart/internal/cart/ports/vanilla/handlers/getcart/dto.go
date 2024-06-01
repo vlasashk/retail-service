@@ -8,20 +8,20 @@ type userCartResp struct {
 }
 
 type itemResp struct {
-	SkuId int64  `json:"sku_id"`
+	SkuID int64  `json:"sku_id"`
 	Name  string `json:"name"`
 	Count uint16 `json:"count"`
 	Price uint32 `json:"price"`
 }
 
-func cartToDTO(cart models.Cart) userCartResp {
+func itemsToDTO(items models.ItemsInCart) userCartResp {
 	resp := userCartResp{
-		TotalPrice: cart.TotalPrice,
+		TotalPrice: items.TotalPrice,
 	}
-	resp.Items = make([]itemResp, 0, len(cart.Items))
-	for _, item := range cart.Items {
+	resp.Items = make([]itemResp, 0, len(items.Items))
+	for _, item := range items.Items {
 		resp.Items = append(resp.Items, itemResp{
-			SkuId: item.SkuId,
+			SkuID: item.SkuID,
 			Name:  item.Info.Name,
 			Count: item.Count,
 			Price: item.Info.Price,

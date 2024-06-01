@@ -13,7 +13,7 @@ type Resources struct {
 	UseCase *usecase.UseCase
 }
 
-func NewResources(cfg config.CartConfig) (Resources, error) {
+func NewResources(cfg config.Config) (Resources, error) {
 	log, err := logger.New(cfg.LoggerLVL)
 	if err != nil {
 		return Resources{}, err

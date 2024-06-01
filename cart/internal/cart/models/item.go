@@ -6,7 +6,7 @@ type ItemDescription struct {
 }
 
 type Item struct {
-	SkuId int64
+	SkuID int64
 	Count uint16
 	Info  ItemDescription
 }

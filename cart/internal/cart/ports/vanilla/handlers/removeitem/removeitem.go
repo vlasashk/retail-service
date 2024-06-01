@@ -5,7 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"route256/cart/internal/cart/models/constants"
+	"route256/cart/internal/cart/constants"
+	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
 	"route256/cart/internal/cart/utils/converter"
 
@@ -32,17 +33,17 @@ func New(log zerolog.Logger, remover ItemRemover) *Handler {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	localLog := h.log.With().Str("handler", "remove_item").Logger()
 
-	userID, errUserID := converter.UserToInt(r.PathValue(constants.PathArgUserID))
-	skuID, errSKUiD := converter.SKUtoInt(r.PathValue(constants.PathArgSKU))
+	userID, errUserID := converter.UserToInt(r.PathValue(constants.UserID))
+	skuID, errSKUiD := converter.SKUtoInt(r.PathValue(constants.SKUid))
 	if err := errors.Join(errUserID, errSKUiD); err != nil {
-		localLog.Error().Err(err).Str(constants.PathArgUserID, r.PathValue(constants.PathArgUserID)).Str(constants.PathArgSKU, r.PathValue(constants.PathArgSKU)).Send()
+		localLog.Error().Err(err).Str(constants.UserID, r.PathValue(constants.UserID)).Str(constants.SKUid, r.PathValue(constants.SKUid)).Send()
 		errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)
 		return
 	}
 
 	if err := h.itemRemover.DeleteItem(r.Context(), userID, skuID); err != nil {
 		localLog.Error().Err(err).Send()
-		errhandle.NewErr(constants.ErrRemoveItem).Send(w, localLog, http.StatusInternalServerError)
+		errhandle.NewErr(models.ErrRemoveItem.Error()).Send(w, localLog, http.StatusInternalServerError)
 		return
 	}
 

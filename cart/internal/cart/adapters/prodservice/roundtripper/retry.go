@@ -9,17 +9,19 @@ import (
 )
 
 type retryer struct {
-	retries int
-	log     zerolog.Logger
-	next    http.RoundTripper
+	retries               int
+	maxDelayBeforeNextTry int
+	log                   zerolog.Logger
+	next                  http.RoundTripper
 }
 
-func Retry(log zerolog.Logger, retries int) func(next http.RoundTripper) http.RoundTripper {
+func Retry(log zerolog.Logger, retries, delay int) func(next http.RoundTripper) http.RoundTripper {
 	return func(next http.RoundTripper) http.RoundTripper {
 		return retryer{
-			retries: retries,
-			log:     log,
-			next:    next,
+			retries:               retries,
+			log:                   log,
+			maxDelayBeforeNextTry: delay,
+			next:                  next,
 		}
 	}
 }
@@ -41,7 +43,7 @@ func (r retryer) RoundTrip(req *http.Request) (*http.Response, error) {
 			break
 		}
 		log.Warn().Int("retries left", r.retries-1-i).Send()
-		if sleep <= 3 {
+		if sleep <= r.maxDelayBeforeNextTry {
 			sleep++
 		}
 		if i != r.retries-1 {

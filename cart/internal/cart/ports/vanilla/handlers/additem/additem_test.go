@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"testing"
 
+	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
-	"route256/cart/internal/cart/models/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/additem"
 	mockAdder "route256/cart/internal/cart/ports/vanilla/handlers/additem/mocks"
 
@@ -41,7 +41,7 @@ func TestAddItemHandler(t *testing.T) {
 	url := "http://example.com/user/%d/cart/%d"
 
 	testItem := models.Item{
-		SkuId: 1000,
+		SkuID: 1000,
 		Count: 5,
 		Info: models.ItemDescription{
 			Name:  "TEST",
@@ -62,7 +62,7 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemHandlerSuccess",
 			expectCode: http.StatusOK,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(nil).Once()
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(nil).Once()
 			},
 			userID: 999,
 			skuID:  1000,
@@ -117,7 +117,7 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemProductDoesntExist",
 			expectCode: http.StatusPreconditionFailed,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(models.ErrNotFound).Once()
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(models.ErrNotFound).Once()
 			},
 			userID:     42,
 			skuID:      1000,
@@ -128,7 +128,7 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemAdderErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(errors.New("any error")).Once()
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(errors.New("any error")).Once()
 			},
 			userID:     13,
 			skuID:      1000,
@@ -139,12 +139,12 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemProviderErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuId, testItem.Count).Return(models.ErrItemProvider).Once()
+				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(models.ErrItemProvider).Once()
 			},
 			userID:     1,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
-			expectResp: `{"error":"failed to get item"}`,
+			expectResp: `{"error":"failed to request item info"}`,
 		},
 		{
 			name:       "AddItemReaderErr",
@@ -163,8 +163,8 @@ func TestAddItemHandler(t *testing.T) {
 			mocks := initMocks(t)
 
 			r := httptest.NewRequest("POST", fmt.Sprintf(url, tt.userID, tt.skuID), tt.body)
-			r.SetPathValue(constants.PathArgUserID, strconv.Itoa(int(tt.userID)))
-			r.SetPathValue(constants.PathArgSKU, strconv.Itoa(int(tt.skuID)))
+			r.SetPathValue(constants.UserID, strconv.Itoa(int(tt.userID)))
+			r.SetPathValue(constants.SKUid, strconv.Itoa(int(tt.skuID)))
 			w := httptest.NewRecorder()
 			tt.mockSetUp(mocks, tt.userID)
 

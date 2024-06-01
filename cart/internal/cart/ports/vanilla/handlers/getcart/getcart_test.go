@@ -9,9 +9,8 @@ import (
 	"strconv"
 	"testing"
 
+	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
-	"route256/cart/internal/cart/models/constants"
-
 	"route256/cart/internal/cart/ports/vanilla/handlers/getcart"
 	mockRetriever "route256/cart/internal/cart/ports/vanilla/handlers/getcart/mocks"
 
@@ -34,10 +33,10 @@ func initMocks(t *testing.T) *mocksToUse {
 func TestGetCartHandler(t *testing.T) {
 	url := "http://example.com/user/%d/cart/list"
 
-	testCart := models.Cart{
+	testCart := models.ItemsInCart{
 		Items: []models.Item{
 			{
-				SkuId: 1000,
+				SkuID: 1000,
 				Count: 5,
 				Info: models.ItemDescription{
 					Name:  "TEST",
@@ -45,7 +44,7 @@ func TestGetCartHandler(t *testing.T) {
 				},
 			},
 			{
-				SkuId: 2000,
+				SkuID: 2000,
 				Count: 1,
 				Info: models.ItemDescription{
 					Name:  "TEST",
@@ -83,7 +82,7 @@ func TestGetCartHandler(t *testing.T) {
 			name:       "GetCartIsEmpty",
 			expectCode: http.StatusNotFound,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.Cart{}, models.ErrCartIsEmpty).Once()
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.ItemsInCart{}, models.ErrCartIsEmpty).Once()
 			},
 			userID:     999,
 			expectResp: `{"error":"cart is empty or doesn't exist"}`,
@@ -92,7 +91,7 @@ func TestGetCartHandler(t *testing.T) {
 			name:       "GetCartRetrieverErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.Cart{}, errors.New("any err")).Once()
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.ItemsInCart{}, errors.New("any err")).Once()
 			},
 			userID:     13,
 			expectResp: `{"error":"failed to checkout cart"}`,
@@ -101,7 +100,7 @@ func TestGetCartHandler(t *testing.T) {
 			name:       "GetCartProductDoesntExist",
 			expectCode: http.StatusPreconditionFailed,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.Cart{}, models.ErrNotFound).Once()
+				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.ItemsInCart{}, models.ErrNotFound).Once()
 			},
 			userID:     42,
 			expectResp: `{"error":"item not found"}`,
@@ -114,7 +113,7 @@ func TestGetCartHandler(t *testing.T) {
 			mocks := initMocks(t)
 
 			r := httptest.NewRequest("GET", fmt.Sprintf(url, tt.userID), nil)
-			r.SetPathValue(constants.PathArgUserID, strconv.Itoa(int(tt.userID)))
+			r.SetPathValue(constants.UserID, strconv.Itoa(int(tt.userID)))
 			w := httptest.NewRecorder()
 			tt.mockSetUp(mocks, tt.userID)
 

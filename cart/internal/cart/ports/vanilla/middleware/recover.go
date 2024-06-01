@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"route256/cart/internal/cart/models/constants"
+	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
 
 	"github.com/rs/zerolog"
@@ -21,7 +21,7 @@ func Recover(next http.Handler) http.Handler {
 					panic(rec)
 				}
 				logger.Error().Any("panic", rec).Bytes("stack", debug.Stack()).Send()
-				errhandle.NewErr(constants.ErrInternalError).Send(w, logger, http.StatusInternalServerError)
+				errhandle.NewErr(models.ErrInternalError.Error()).Send(w, logger, http.StatusInternalServerError)
 				return
 			}
 		}()
