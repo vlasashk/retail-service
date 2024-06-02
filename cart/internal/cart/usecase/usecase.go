@@ -12,27 +12,27 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//go:generate mockery --name=cartAdder
+//go:generate minimock -i cartAdder -p usecase_test
 type cartAdder interface {
 	AddItem(ctx context.Context, userID, skuID int64, count uint16) error
 }
 
-//go:generate mockery --name=itemRemover
+//go:generate minimock -i itemRemover -p usecase_test
 type itemRemover interface {
 	DeleteItem(ctx context.Context, userID, skuID int64) error
 }
 
-//go:generate mockery --name=cartRemover
+//go:generate minimock -i cartRemover -p usecase_test
 type cartRemover interface {
 	DeleteItemsByUserID(ctx context.Context, userID int64) error
 }
 
-//go:generate mockery --name=cartRetriever
+//go:generate minimock -i cartRetriever -p usecase_test
 type cartRetriever interface {
 	GetItemsByUserID(ctx context.Context, userID int64) ([]models.Item, error)
 }
 
-//go:generate mockery --name=productProvider
+//go:generate minimock -i productProvider -p usecase_test
 type productProvider interface {
 	GetProduct(ctx context.Context, sku int64) (models.ItemDescription, error)
 }
