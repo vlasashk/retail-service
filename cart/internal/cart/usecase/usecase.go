@@ -7,12 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"route256/cart/config"
-	"route256/cart/internal/cart/adapters/inmem"
-	"route256/cart/internal/cart/adapters/prodservice"
 	"route256/cart/internal/cart/models"
 
-	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -49,15 +45,19 @@ type UseCase struct {
 	provider    productProvider
 }
 
-func New(cfg config.ProductProviderCfg, logger zerolog.Logger) *UseCase {
-	inMemStorage := inmem.NewStorage()
-
+func New(
+	adder cartAdder,
+	itemRemover itemRemover,
+	cartRemover cartRemover,
+	retriever cartRetriever,
+	provider productProvider,
+) *UseCase {
 	return &UseCase{
-		adder:       inMemStorage,
-		itemRemover: inMemStorage,
-		cartRemover: inMemStorage,
-		retriever:   inMemStorage,
-		provider:    prodservice.New(cfg, logger),
+		adder:       adder,
+		itemRemover: itemRemover,
+		cartRemover: cartRemover,
+		retriever:   retriever,
+		provider:    provider,
 	}
 }
 
