@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate mockery --name=CartRemover
+//go:generate minimock -i CartRemover -p removecart_test
 type CartRemover interface {
 	DeleteItemsByUserID(ctx context.Context, userID int64) error
 }
