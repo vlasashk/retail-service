@@ -42,6 +42,7 @@ func initUseCase(mocks *mocksToUse) *usecase.UseCase {
 }
 
 func TestAddItem(t *testing.T) {
+	t.Parallel()
 	testItem := models.Item{
 		SkuID: 1000,
 		Count: 5,
@@ -111,6 +112,7 @@ func TestAddItem(t *testing.T) {
 }
 
 func TestGetItemsByUserID(t *testing.T) {
+	t.Parallel()
 	testItemAlpha := models.Item{
 		SkuID: 1000,
 		Count: 5,
@@ -254,6 +256,7 @@ func TestGetItemsByUserID(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
+	t.Parallel()
 	testItem := models.Item{
 		SkuID: 1000,
 		Count: 5,
@@ -305,6 +308,7 @@ func TestDeleteItem(t *testing.T) {
 }
 
 func TestDeleteItemsByUserID(t *testing.T) {
+	t.Parallel()
 	anyErr := errors.New("any error")
 
 	tests := []struct {
