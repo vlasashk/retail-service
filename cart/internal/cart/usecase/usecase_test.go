@@ -70,7 +70,7 @@ func TestAddItem(t *testing.T) {
 		},
 		{
 			name: "AddItemProductDoesntExist",
-			mockSetUp: func(m *mocksToUse, userID int64) {
+			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(models.ItemDescription{}, models.ErrNotFound)
 			},
 			userID:      42,
@@ -78,7 +78,7 @@ func TestAddItem(t *testing.T) {
 		},
 		{
 			name: "AddItemProviderErr",
-			mockSetUp: func(m *mocksToUse, userID int64) {
+			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(models.ItemDescription{}, errors.New("any error"))
 			},
 			userID:      13,
