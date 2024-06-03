@@ -13,16 +13,15 @@ import (
 	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/ports/vanilla/handlers/additem"
-	mockAdder "route256/cart/internal/cart/ports/vanilla/handlers/additem/mocks"
 
+	"github.com/gojuno/minimock/v3"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 type mocksToUse struct {
-	Adder *mockAdder.CartAdder
+	Adder *CartAdderMock
 }
 
 type errorReader struct{}
@@ -32,8 +31,9 @@ func (e *errorReader) Read(_ []byte) (n int, err error) {
 }
 
 func initMocks(t *testing.T) *mocksToUse {
+	mc := minimock.NewController(t)
 	return &mocksToUse{
-		Adder: mockAdder.NewCartAdder(t),
+		Adder: NewCartAdderMock(mc),
 	}
 }
 
@@ -62,7 +62,7 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemHandlerSuccess",
 			expectCode: http.StatusOK,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(nil).Once()
+				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(nil)
 			},
 			userID: 999,
 			skuID:  1000,
@@ -117,7 +117,7 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemProductDoesntExist",
 			expectCode: http.StatusPreconditionFailed,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(models.ErrNotFound).Once()
+				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(models.ErrNotFound)
 			},
 			userID:     42,
 			skuID:      1000,
@@ -128,7 +128,7 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemAdderErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(errors.New("any error")).Once()
+				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(errors.New("any error"))
 			},
 			userID:     13,
 			skuID:      1000,
@@ -139,7 +139,7 @@ func TestAddItemHandler(t *testing.T) {
 			name:       "AddItemProviderErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Adder.On("AddItem", mock.Anything, userID, testItem.SkuID, testItem.Count).Return(models.ErrItemProvider).Once()
+				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(models.ErrItemProvider)
 			},
 			userID:     1,
 			skuID:      1000,

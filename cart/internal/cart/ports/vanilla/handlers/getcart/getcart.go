@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate mockery --name=CartRetriever
+//go:generate minimock -i CartRetriever -p getcart_test
 type CartRetriever interface {
 	GetItemsByUserID(ctx context.Context, userID int64) (models.ItemsInCart, error)
 }
