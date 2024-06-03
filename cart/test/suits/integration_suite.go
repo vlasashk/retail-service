@@ -1,4 +1,4 @@
-//go:build integration
+////go:build integration
 
 package suits
 
@@ -263,6 +263,62 @@ func (s *IntegrationSuite) TestGetItems() {
 			expectResp: `{"error":"cart is empty or doesn't exist"}`,
 			setUP:      func() {},
 			tearDown:   func() {},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			tt.setUP()
+			r, err := http.NewRequest("GET", fmt.Sprintf("%s/user/%d/cart/list", s.serviceAddress, tt.userID), nil)
+			s.Require().NoError(err)
+			r.SetPathValue(constants.UserID, strconv.Itoa(int(tt.userID)))
+
+			resp, err := s.client.Do(r)
+			s.Require().NoError(err)
+			s.Equal(tt.expectCode, resp.StatusCode)
+
+			body, err := io.ReadAll(resp.Body)
+			s.Require().NoError(err)
+			_ = resp.Body.Close()
+			if len(body) > 0 || len(tt.expectResp) > 0 {
+				s.JSONEq(tt.expectResp, string(body))
+			}
+			tt.tearDown()
+		})
+	}
+}
+
+func (s *IntegrationSuite) TestDeleteItem() {
+	tests := []struct {
+		name       string
+		setUP      func()
+		tearDown   func()
+		expectCode int
+		userID     int64
+		expectResp string
+	}{
+		{
+			name:       "DelItemHandlerSuccess",
+			expectCode: http.StatusOK,
+			userID:     defaultUserID,
+			expectResp: `{"items":[{"sku_id":2956315,"name":"Eloy. Time To Turn","count":1,"price":3130}],"total_price":3130}`,
+			setUP: func() {
+				s.delItemHelper(defaultUserID, defaultAlphaItemID)
+			},
+			tearDown: func() {
+				s.addItemHelper(defaultUserID, defaultAlphaItemID, 5)
+			},
+		},
+		{
+			name:       "DelItemHandlerSuccess_DelAllItems",
+			expectCode: http.StatusNotFound,
+			userID:     defaultUserID,
+			expectResp: `{"error":"cart is empty or doesn't exist"}`,
+			setUP: func() {
+				s.delItemHelper(defaultUserID, defaultAlphaItemID)
+				s.delItemHelper(defaultUserID, defaultBetaItemID)
+			},
+			tearDown: func() {},
 		},
 	}
 
