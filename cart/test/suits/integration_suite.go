@@ -235,6 +235,18 @@ func (s *IntegrationSuite) TestGetItems() {
 			},
 		},
 		{
+			name:       "GetCartHandlerSuccess_AddItemToNewUser",
+			expectCode: http.StatusOK,
+			userID:     47777,
+			expectResp: `{"items":[{"sku_id":2618151,"name":"Пора снимать бикини","count":10,"price":452}],"total_price":4520}`,
+			setUP: func() {
+				s.addItemHelper(47777, defaultAlphaItemID, 10)
+			},
+			tearDown: func() {
+				s.delItemHelper(47777, defaultAlphaItemID)
+			},
+		},
+		{
 			name:       "GetCartHandlerSuccess_AfterAddIdentical",
 			expectCode: http.StatusOK,
 			userID:     defaultUserID,
