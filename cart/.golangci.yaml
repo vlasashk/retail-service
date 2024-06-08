@@ -30,7 +30,7 @@ linters-settings:
   gocyclo:
     min-complexity: 20
   gocognit:
-    min-complexity: 30
+    min-complexity: 10
   dupl:
     threshold: 200
   nakedret:

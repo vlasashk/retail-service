@@ -16,7 +16,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate mockery --name=CartAdder
+//go:generate minimock -i CartAdder -p additem_test
 type CartAdder interface {
 	AddItem(ctx context.Context, userID, skuID int64, count uint16) error
 }

@@ -12,21 +12,21 @@ import (
 	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/models"
 	"route256/cart/internal/cart/ports/vanilla/handlers/getcart"
-	mockRetriever "route256/cart/internal/cart/ports/vanilla/handlers/getcart/mocks"
 
+	"github.com/gojuno/minimock/v3"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 type mocksToUse struct {
-	Retriever *mockRetriever.CartRetriever
+	Retriever *CartRetrieverMock
 }
 
 func initMocks(t *testing.T) *mocksToUse {
+	mc := minimock.NewController(t)
 	return &mocksToUse{
-		Retriever: mockRetriever.NewCartRetriever(t),
+		Retriever: NewCartRetrieverMock(mc),
 	}
 }
 
@@ -66,7 +66,7 @@ func TestGetCartHandler(t *testing.T) {
 			name:       "GetCartHandlerSuccess",
 			expectCode: http.StatusOK,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(testCart, nil).Once()
+				m.Retriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then(testCart, nil)
 			},
 			userID:     999,
 			expectResp: `{"items":[{"sku_id":1000,"name":"TEST","count":5,"price":1000},{"sku_id":2000,"name":"TEST","count":1,"price":500}],"total_price":5500}`,
@@ -82,7 +82,7 @@ func TestGetCartHandler(t *testing.T) {
 			name:       "GetCartIsEmpty",
 			expectCode: http.StatusNotFound,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.ItemsInCart{}, models.ErrCartIsEmpty).Once()
+				m.Retriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then(models.ItemsInCart{}, models.ErrCartIsEmpty)
 			},
 			userID:     999,
 			expectResp: `{"error":"cart is empty or doesn't exist"}`,
@@ -91,7 +91,7 @@ func TestGetCartHandler(t *testing.T) {
 			name:       "GetCartRetrieverErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.ItemsInCart{}, errors.New("any err")).Once()
+				m.Retriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then(models.ItemsInCart{}, errors.New("any err"))
 			},
 			userID:     13,
 			expectResp: `{"error":"failed to checkout cart"}`,
@@ -100,7 +100,7 @@ func TestGetCartHandler(t *testing.T) {
 			name:       "GetCartProductDoesntExist",
 			expectCode: http.StatusPreconditionFailed,
 			mockSetUp: func(m *mocksToUse, userID int64) {
-				m.Retriever.On("GetItemsByUserID", mock.Anything, userID).Return(models.ItemsInCart{}, models.ErrNotFound).Once()
+				m.Retriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then(models.ItemsInCart{}, models.ErrNotFound)
 			},
 			userID:     42,
 			expectResp: `{"error":"item not found"}`,

@@ -11,21 +11,21 @@ import (
 
 	"route256/cart/internal/cart/constants"
 	"route256/cart/internal/cart/ports/vanilla/handlers/removeitem"
-	mockRemover "route256/cart/internal/cart/ports/vanilla/handlers/removeitem/mocks"
 
+	"github.com/gojuno/minimock/v3"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 type mocksToUse struct {
-	Remover *mockRemover.ItemRemover
+	Remover *ItemRemoverMock
 }
 
 func initMocks(t *testing.T) *mocksToUse {
+	mc := minimock.NewController(t)
 	return &mocksToUse{
-		Remover: mockRemover.NewItemRemover(t),
+		Remover: NewItemRemoverMock(mc),
 	}
 }
 
@@ -44,7 +44,7 @@ func TestRemoveCartHandler(t *testing.T) {
 			name:       "RemoveItemHandlerSuccess",
 			expectCode: http.StatusNoContent,
 			mockSetUp: func(m *mocksToUse, userID, skuID int64) {
-				m.Remover.On("DeleteItem", mock.Anything, userID, skuID).Return(nil).Once()
+				m.Remover.DeleteItemMock.When(minimock.AnyContext, userID, skuID).Then(nil)
 			},
 			userID: 999,
 			skuID:  999,
@@ -77,7 +77,7 @@ func TestRemoveCartHandler(t *testing.T) {
 			name:       "RemoveItemErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID, skuID int64) {
-				m.Remover.On("DeleteItem", mock.Anything, userID, skuID).Return(errors.New("any error")).Once()
+				m.Remover.DeleteItemMock.When(minimock.AnyContext, userID, skuID).Then(errors.New("any error"))
 			},
 			userID:     13,
 			skuID:      999,
