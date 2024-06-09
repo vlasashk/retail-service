@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package loms.service.v1;
+
+option go_package = "route256/loms/api/loms/v1;lomsservicev1";
+
+
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+
+
+service LOMS {
+    rpc OrderCreate(OrderCreateRequest) returns(OrderCreateResponse) {}
+    rpc OrderInfo(OrderInfoRequest) returns(OrderInfoResponse){}
+    rpc OrderPay(OrderPayRequest) returns(google.protobuf.Empty){}
+    rpc OrderCancel(OrderCancelRequest) returns(google.protobuf.Empty){}
+    rpc StocksInfo(StocksInfoRequest) returns(StocksInfoResponse){}
+}
+
+enum Status {
+    STATUS_UNKNOWN = 0;
+    STATUS_NEW = 1;
+    STATUS_AWAITING_PAYMENT = 2;
+    STATUS_PAYED = 3;
+    STATUS_CANCELLED = 4;
+    STATUS_FAILED = 5;
+}
+
+message Item {
+    uint32 sku = 1;
+    uint32 count = 2;
+}
+
+message OrderCreateRequest {
+    int64 user = 1;
+    repeated Item items = 2;
+}
+
+message OrderCreateResponse {
+    int64 orderID = 1;
+}
+
+message OrderInfoRequest {
+    int64 orderID = 1;
+}
+
+message OrderInfoResponse {
+    int64 user = 1;
+    repeated Item items = 2;
+    Status status = 3;
+}
+
+message OrderPayRequest {
+    int64 orderID = 1;
+}
+
+message OrderCancelRequest {
+    int64 orderID = 1;
+}
+
+message StocksInfoRequest {
+    uint32 sku = 1;
+}
+
+message StocksInfoResponse {
+    uint64 count = 1;
+}
