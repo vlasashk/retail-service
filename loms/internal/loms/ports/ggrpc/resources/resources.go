@@ -22,8 +22,12 @@ func New(cfg config.Config) (Resources, error) {
 		return Resources{}, err
 	}
 
+	stockStorage, err := stocksmem.New()
+	if err != nil {
+		return Resources{}, err
+	}
+
 	orderStorage := ordersmem.New()
-	stockStorage := stocksmem.New()
 
 	return Resources{
 		Log: log,

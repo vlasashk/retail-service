@@ -9,17 +9,16 @@ import (
 )
 
 type stockProvider interface {
-	Reserve(_ context.Context, order models.Order) error
-	ReserveRemove(_ context.Context, order models.Order) error
-	ReserveCancel(_ context.Context, order models.Order) error
-	GetBySKU(_ context.Context, skuID uint32) (int64, error)
-	UploadStockData(_ context.Context, stocks []models.Stock) error
+	Reserve(context.Context, models.Order) error
+	ReserveRemove(context.Context, models.Order) error
+	ReserveCancel(context.Context, models.Order) error
+	GetBySKU(context.Context, uint32) (int64, error)
 }
 
 type orderManager interface {
-	Create(_ context.Context, order models.Order) (int64, error)
-	SetStatus(_ context.Context, orderID int64, status models.OrderStatus) error
-	GetByOrderID(_ context.Context, orderID int64) (models.Order, error)
+	Create(context.Context, models.Order) (int64, error)
+	SetStatus(context.Context, int64, models.OrderStatus) error
+	GetByOrderID(context.Context, int64) (models.Order, error)
 }
 
 type UseCase struct {
@@ -50,11 +49,13 @@ func (uc *UseCase) OrderCreate(ctx context.Context, order models.Order) (int64, 
 
 	defer func() {
 		if err != nil {
+			uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation failed")
 			err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
 			if err != nil {
 				uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
 			}
 		} else {
+			uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation success")
 			err = uc.orders.SetStatus(ctx, orderID, models.AwaitingPaymentStatus)
 			if err != nil {
 				uc.log.Error().Err(err).Str("set fail", "AWAITING_PAYMENT").Int64("orderID", orderID).Send()
@@ -84,11 +85,13 @@ func (uc *UseCase) OrderPay(ctx context.Context, orderID int64) error {
 
 	defer func() {
 		if err != nil {
+			uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation removal failed")
 			err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
 			if err != nil {
 				uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
 			}
 		} else {
+			uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation removal success")
 			err = uc.orders.SetStatus(ctx, orderID, models.PayedStatus)
 			if err != nil {
 				uc.log.Error().Err(err).Str("set fail", "PAYED").Int64("orderID", orderID).Send()
@@ -106,11 +109,13 @@ func (uc *UseCase) OrderCancel(ctx context.Context, orderID int64) error {
 
 	defer func() {
 		if err != nil {
+			uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation cancellation failed")
 			err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
 			if err != nil {
 				uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
 			}
 		} else {
+			uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation cancellation success")
 			err = uc.orders.SetStatus(ctx, orderID, models.CancelledStatus)
 			if err != nil {
 				uc.log.Error().Err(err).Str("set fail", "CANCELLED").Int64("orderID", orderID).Send()

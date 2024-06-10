@@ -2,10 +2,15 @@ package stocksmem
 
 import (
 	"context"
+	_ "embed"
+	"encoding/json"
 	"sync"
 
 	"route256/loms/internal/loms/models"
 )
+
+//go:embed stock-data.json
+var stockData []byte
 
 type Stocks struct {
 	mu       *sync.RWMutex
@@ -13,12 +18,18 @@ type Stocks struct {
 	reserved map[uint32]int64 // Зарезервированные товары (не оплаченные) (skuID -> amount)
 }
 
-func New() *Stocks {
-	return &Stocks{
+func New() (*Stocks, error) {
+	stocks := &Stocks{
 		mu:       &sync.RWMutex{},
 		stocks:   make(map[uint32]int64),
 		reserved: make(map[uint32]int64),
 	}
+
+	if err := stocks.uploadStockData(); err != nil {
+		return nil, err
+	}
+
+	return stocks, nil
 }
 
 func (s *Stocks) Reserve(_ context.Context, order models.Order) error {
@@ -146,13 +157,25 @@ func (s *Stocks) GetBySKU(_ context.Context, skuID uint32) (int64, error) {
 }
 
 // UploadStockData - добавляет данные из stock-data.json. Перезаписывает данные в случае их наличия
-func (s *Stocks) UploadStockData(_ context.Context, stocks []models.Stock) error {
+func (s *Stocks) uploadStockData() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for _, stock := range stocks {
-		s.stocks[stock.SKUid] += int64(stock.Count)
-		s.reserved[stock.SKUid] = int64(stock.Reserved)
+	type stockItem struct {
+		SKU        uint32 `json:"sku"`
+		TotalCount uint32 `json:"total_count"`
+		Reserved   uint32 `json:"reserved"`
+	}
+
+	var stockItems []stockItem
+
+	if err := json.Unmarshal(stockData, &stockItems); err != nil {
+		return err
+	}
+
+	for _, stock := range stockItems {
+		s.stocks[stock.SKU] += int64(stock.TotalCount)
+		s.reserved[stock.SKU] = int64(stock.Reserved)
 	}
 
 	return nil
