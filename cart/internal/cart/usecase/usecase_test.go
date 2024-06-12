@@ -18,6 +18,7 @@ type mocksToUse struct {
 	CartRemover     *CartRemoverMock
 	ProductProvider *ProductProviderMock
 	CartRetriever   *CartRetrieverMock
+	StockProvider   *StocksProviderMock
 }
 
 func initMocks(t *testing.T) *mocksToUse {
@@ -38,6 +39,7 @@ func initUseCase(mocks *mocksToUse) *usecase.UseCase {
 		mocks.CartRemover,
 		mocks.CartRetriever,
 		mocks.ProductProvider,
+		mocks.StockProvider,
 	)
 }
 

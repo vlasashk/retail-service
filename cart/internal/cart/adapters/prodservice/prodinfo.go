@@ -25,6 +25,7 @@ type Client struct {
 }
 
 func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client {
+	log.Debug().Str("host", cfg.Address).Msg("creating new product service client")
 	return &Client{
 		baseURL: cfg.Address,
 		token:   cfg.AccessToken,

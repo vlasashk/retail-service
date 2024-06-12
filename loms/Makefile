@@ -5,11 +5,11 @@ LOCAL_BIN:=$(CURDIR)/bin
 PROTOC = PATH="$$PATH:$(LOCAL_BIN)" protoc
 
 # Путь до нашего прото
-LOMS_PROTO_PATH = api/loms/v1
-PROTO_GEN_OUT = pkg/${LOMS_PROTO_PATH}
+LOMS_PROTO_PATH = ../proto_contracts/loms/v1
+PROTO_GEN_OUT = pkg/api/loms/v1
 
 .PHONY: build
-build:
+build: .protoc-generate-server
 	go build -o $(LOCAL_BIN)/loms ./cmd/loms/main.go
 
 .PHONY: lint

@@ -9,6 +9,7 @@ import (
 
 	"route256/loms/config"
 	"route256/loms/internal/loms/ports/ggrpc"
+	"route256/loms/internal/loms/ports/ggrpc/resources"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -22,11 +23,11 @@ func Run(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-
-	grpcServer, err := ggrpc.NewServer(cfg)
+	res, err := resources.New(cfg)
 	if err != nil {
 		return err
 	}
+	grpcServer := ggrpc.NewServer(cfg, res)
 
 	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {

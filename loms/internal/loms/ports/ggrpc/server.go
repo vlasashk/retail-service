@@ -9,19 +9,13 @@ import (
 
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
-func NewServer(cfg config.Config) (*grpc.Server, error) {
-	res, err := resources.New(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	options, err := buildOptions(res.Log)
-	if err != nil {
-		return nil, err
-	}
+func NewServer(_ config.Config, res resources.Resources) *grpc.Server {
+	options := buildOptions(res.Log)
 
 	server := grpc.NewServer(options...)
 	reflection.Register(server)
@@ -29,15 +23,16 @@ func NewServer(cfg config.Config) (*grpc.Server, error) {
 	serverAdapter := impl.New(res.Log, res.UseCase)
 
 	lomsservicev1.RegisterLOMSServer(server, serverAdapter)
+	grpc_health_v1.RegisterHealthServer(server, health.NewServer())
 
-	return server, err
+	return server
 }
 
-func buildOptions(log zerolog.Logger) ([]grpc.ServerOption, error) {
+func buildOptions(log zerolog.Logger) []grpc.ServerOption {
 	return []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			interceptors.LoggingInterceptor(log),
 			interceptors.RecoverPanic,
 		),
-	}, nil
+	}
 }

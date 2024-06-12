@@ -11,6 +11,7 @@ import (
 
 	"route256/cart/config"
 	"route256/cart/internal/cart/ports/vanilla"
+	"route256/cart/internal/cart/ports/vanilla/resources"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -22,10 +23,13 @@ func Run(ctx context.Context, cfg config.Config) error {
 	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	srv, err := vanilla.NewServer(cfg)
+	res, err := resources.NewResources(cfg)
 	if err != nil {
 		return err
 	}
+	defer res.Stop()
+
+	srv := vanilla.NewServer(cfg, res)
 
 	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {

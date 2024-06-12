@@ -55,9 +55,13 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		localLog.Error().Err(err).Send()
 		switch {
 		case errors.Is(err, models.ErrNotFound):
-			errhandle.NewErr(models.ErrItemNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)
+			errhandle.NewErr(models.ErrNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)
+		case errors.Is(err, models.ErrInsufficientStock):
+			errhandle.NewErr(models.ErrInsufficientStock.Error()).Send(w, localLog, http.StatusPreconditionFailed)
 		case errors.Is(err, models.ErrItemProvider):
 			errhandle.NewErr(models.ErrItemProvider.Error()).Send(w, localLog, http.StatusInternalServerError)
+		case errors.Is(err, models.ErrStockProvider):
+			errhandle.NewErr(models.ErrStockProvider.Error()).Send(w, localLog, http.StatusInternalServerError)
 		default:
 			errhandle.NewErr(models.ErrAddItem.Error()).Send(w, localLog, http.StatusInternalServerError)
 		}

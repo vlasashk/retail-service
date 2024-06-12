@@ -8,17 +8,19 @@ import (
 	"github.com/rs/zerolog"
 )
 
+//go:generate minimock -i stockProvider -p usecase_test
 type stockProvider interface {
-	Reserve(context.Context, models.Order) error
-	ReserveRemove(context.Context, models.Order) error
-	ReserveCancel(context.Context, models.Order) error
-	GetBySKU(context.Context, uint32) (int64, error)
+	Reserve(ctx context.Context, order models.Order) error
+	ReserveRemove(ctx context.Context, order models.Order) error
+	ReserveCancel(ctx context.Context, order models.Order) error
+	GetBySKU(ctx context.Context, skuID uint32) (int64, error)
 }
 
+//go:generate minimock -i orderManager -p usecase_test
 type orderManager interface {
-	Create(context.Context, models.Order) (int64, error)
-	SetStatus(context.Context, int64, models.OrderStatus) error
-	GetByOrderID(context.Context, int64) (models.Order, error)
+	Create(ctx context.Context, order models.Order) (int64, error)
+	SetStatus(ctx context.Context, orderID int64, status models.OrderStatus) error
+	GetByOrderID(ctx context.Context, orderID int64) (models.Order, error)
 }
 
 type UseCase struct {

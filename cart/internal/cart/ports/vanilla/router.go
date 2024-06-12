@@ -5,6 +5,7 @@ import (
 
 	"route256/cart/config"
 	"route256/cart/internal/cart/ports/vanilla/handlers/additem"
+	"route256/cart/internal/cart/ports/vanilla/handlers/checkout"
 	"route256/cart/internal/cart/ports/vanilla/handlers/getcart"
 	"route256/cart/internal/cart/ports/vanilla/handlers/healthz"
 	"route256/cart/internal/cart/ports/vanilla/handlers/removecart"
@@ -14,20 +15,15 @@ import (
 	"route256/cart/internal/cart/ports/vanilla/resources"
 )
 
-func NewServer(cfg config.Config) (*http.Server, error) {
+func NewServer(cfg config.Config, res resources.Resources) *http.Server {
 	mux := muxer.NewMyMux()
-
-	res, err := resources.NewResources(cfg)
-	if err != nil {
-		return nil, err
-	}
 
 	addRoutes(mux, res)
 
 	return &http.Server{
 		Addr:    cfg.Address,
 		Handler: mux.Chain(),
-	}, nil
+	}
 }
 
 func addRoutes(mux *muxer.MyMux, resources resources.Resources) {
@@ -38,5 +34,6 @@ func addRoutes(mux *muxer.MyMux, resources resources.Resources) {
 	mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.UseCase))
 	mux.Handle("DELETE /user/{user_id}/cart", removecart.New(resources.Log, resources.UseCase))
 	mux.Handle("GET /user/{user_id}/cart/list", getcart.New(resources.Log, resources.UseCase))
+	mux.Handle("GET /user/{user_id}/cart/checkout", checkout.New(resources.Log, resources.UseCase))
 	mux.HandleFunc("GET /healthz", healthz.HealthCheck)
 }

@@ -6,14 +6,15 @@ import (
 	"route256/loms/internal/loms/adapters/stocksmem"
 	"route256/loms/internal/loms/usecase"
 
-	"route256/cart/pkg/logger"
+	"route256/loms/pkg/logger"
 
 	"github.com/rs/zerolog"
 )
 
 type Resources struct {
-	Log     zerolog.Logger
-	UseCase *usecase.UseCase
+	Log           zerolog.Logger
+	UseCase       *usecase.UseCase
+	stopResources []func() error
 }
 
 func New(cfg config.Config) (Resources, error) {
@@ -36,5 +37,14 @@ func New(cfg config.Config) (Resources, error) {
 			orderStorage,
 			stockStorage,
 		),
+		stopResources: []func() error{},
 	}, nil
+}
+
+func (r Resources) Stop() {
+	for _, stop := range r.stopResources {
+		if err := stop(); err != nil {
+			r.Log.Error().Err(err).Send()
+		}
+	}
 }

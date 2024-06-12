@@ -1,4 +1,4 @@
-package getcart
+package checkout
 
 import (
 	"context"
@@ -14,25 +14,25 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate minimock -i CartRetriever -p getcart_test
-type CartRetriever interface {
-	GetItemsByUserID(ctx context.Context, userID int64) (models.ItemsInCart, error)
+//go:generate minimock -i CartCheckout -p getcart_test
+type CartCheckout interface {
+	CartCheckout(ctx context.Context, userID int64) (int64, error)
 }
 
 type Handler struct {
-	retriever CartRetriever
-	log       zerolog.Logger
+	checkout CartCheckout
+	log      zerolog.Logger
 }
 
-func New(log zerolog.Logger, retriever CartRetriever) *Handler {
+func New(log zerolog.Logger, checkout CartCheckout) *Handler {
 	return &Handler{
-		retriever: retriever,
-		log:       log,
+		checkout: checkout,
+		log:      log,
 	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "get_items").Logger()
+	localLog := h.log.With().Str("handler", "cart_checkout").Logger()
 
 	userID, err := converter.UserToInt(r.PathValue(constants.UserID))
 	if err != nil {
@@ -41,7 +41,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := h.retriever.GetItemsByUserID(r.Context(), userID)
+	orderID, err := h.checkout.CartCheckout(r.Context(), userID)
 	if err != nil {
 		localLog.Error().Err(err).Send()
 		switch {
@@ -49,15 +49,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			errhandle.NewErr(models.ErrCartIsEmpty.Error()).Send(w, localLog, http.StatusNotFound)
 		case errors.Is(err, models.ErrNotFound):
 			errhandle.NewErr(models.ErrNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)
+		case errors.Is(err, models.ErrInsufficientStock):
+			errhandle.NewErr(models.ErrInsufficientStock.Error()).Send(w, localLog, http.StatusPreconditionFailed)
 		default:
 			errhandle.NewErr(models.ErrCartCheckout.Error()).Send(w, localLog, http.StatusInternalServerError)
 		}
 		return
 	}
 
-	itemsResp := itemsToDTO(items)
+	resp := checkoutResp{
+		OrderID: orderID,
+	}
 
-	data, err := json.Marshal(itemsResp)
+	data, err := json.Marshal(resp)
 	if err != nil {
 		localLog.Error().Err(err).Send()
 		errhandle.NewErr(models.ErrJSONProcessing.Error()).Send(w, localLog, http.StatusInternalServerError)

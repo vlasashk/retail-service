@@ -4,8 +4,9 @@ import "github.com/ilyakaznacheev/cleanenv"
 
 type Config struct {
 	Address         string `env:"CART_ADDR" env-default:"localhost:8082"`
-	LoggerLVL       string `env:"CART_LOG_LVL" env-default:"info"`
+	LoggerLVL       string `env:"CART_LOG_LVL" env-default:"debug"`
 	ProductProvider ProductProviderCfg
+	StocksProvider  StocksProviderCfg
 }
 
 type ProductProviderCfg struct {
@@ -14,6 +15,10 @@ type ProductProviderCfg struct {
 	Retries          int    `env:"PRODUCT_SERVICE_RETRIES" env-default:"3"`
 	MaxDelayForRetry int    `env:"PRODUCT_SERVICE_RETRY_DELAY" env-default:"3"`
 	Timeout          int    `env:"PRODUCT_SERVICE_TIMEOUT" env-default:"15"`
+}
+
+type StocksProviderCfg struct {
+	Address string `env:"LOMS_SERVICE_ADDR" env-default:"localhost:50000"`
 }
 
 func New() (Config, error) {
