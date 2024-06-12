@@ -102,7 +102,7 @@ func TestAddItem(t *testing.T) {
 		},
 		{
 			name: "AddItemStockProviderErr",
-			mockSetUp: func(m *mocksToUse, userID int64) {
+			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
 				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, errors.New("any error"))
 			},
@@ -111,7 +111,7 @@ func TestAddItem(t *testing.T) {
 		},
 		{
 			name: "AddItemInsufficientStockErr",
-			mockSetUp: func(m *mocksToUse, userID int64) {
+			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
 				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, nil)
 			},
