@@ -1,4 +1,4 @@
-////go:build integration
+//go:build integration
 
 package suits
 
@@ -135,6 +135,22 @@ func (s *IntegrationSuite) TestAddItem() {
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
 		},
 		{
+			name:       "AddItemInsufficientStock",
+			expectCode: http.StatusPreconditionFailed,
+			userID:     defaultUserID,
+			skuID:      1076963,
+			body:       bytes.NewBuffer([]byte(`{"count":65535}`)),
+			expectResp: `{"error":"insufficient stock"}`,
+		},
+		{
+			name:       "AddItemNoDataOnLMOS",
+			expectCode: http.StatusPreconditionFailed,
+			userID:     defaultUserID,
+			skuID:      32638658,
+			body:       bytes.NewBuffer([]byte(`{"count":2}`)),
+			expectResp: `{"error":"not found"}`,
+		},
+		{
 			name:       "AddItemWrongUserID",
 			expectCode: http.StatusBadRequest,
 			userID:     -1,
@@ -180,7 +196,7 @@ func (s *IntegrationSuite) TestAddItem() {
 			userID:     defaultUserID,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
-			expectResp: `{"error":"item not found"}`,
+			expectResp: `{"error":"not found"}`,
 		},
 	}
 

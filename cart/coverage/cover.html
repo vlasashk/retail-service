@@ -59,41 +59,47 @@
 				
 				<option value="file1">route256/cart/internal/cart/adapters/inmem/storage.go (100.0%)</option>
 				
-				<option value="file2">route256/cart/internal/cart/adapters/prodservice/prodinfo.go (60.0%)</option>
+				<option value="file2">route256/cart/internal/cart/adapters/prodservice/prodinfo.go (61.1%)</option>
 				
 				<option value="file3">route256/cart/internal/cart/adapters/prodservice/roundtripper/retry.go (58.8%)</option>
 				
-				<option value="file4">route256/cart/internal/cart/ports/vanilla/handlers/additem/additem.go (95.1%)</option>
+				<option value="file4">route256/cart/internal/cart/adapters/stocks/converter.go (20.0%)</option>
 				
-				<option value="file5">route256/cart/internal/cart/ports/vanilla/handlers/errhandle/errhandle.go (80.0%)</option>
+				<option value="file5">route256/cart/internal/cart/adapters/stocks/stocks.go (62.5%)</option>
 				
-				<option value="file6">route256/cart/internal/cart/ports/vanilla/handlers/getcart/dto.go (100.0%)</option>
+				<option value="file6">route256/cart/internal/cart/ports/vanilla/handlers/additem/additem.go (95.3%)</option>
 				
-				<option value="file7">route256/cart/internal/cart/ports/vanilla/handlers/getcart/getcart.go (84.0%)</option>
+				<option value="file7">route256/cart/internal/cart/ports/vanilla/handlers/checkout/checkout.go (84.6%)</option>
 				
-				<option value="file8">route256/cart/internal/cart/ports/vanilla/handlers/healthz/healthz.go (80.0%)</option>
+				<option value="file8">route256/cart/internal/cart/ports/vanilla/handlers/errhandle/errhandle.go (80.0%)</option>
 				
-				<option value="file9">route256/cart/internal/cart/ports/vanilla/handlers/removecart/removecart.go (100.0%)</option>
+				<option value="file9">route256/cart/internal/cart/ports/vanilla/handlers/getcart/dto.go (100.0%)</option>
 				
-				<option value="file10">route256/cart/internal/cart/ports/vanilla/handlers/removeitem/removeitem.go (100.0%)</option>
+				<option value="file10">route256/cart/internal/cart/ports/vanilla/handlers/getcart/getcart.go (84.0%)</option>
 				
-				<option value="file11">route256/cart/internal/cart/ports/vanilla/middleware/logger.go (100.0%)</option>
+				<option value="file11">route256/cart/internal/cart/ports/vanilla/handlers/healthz/healthz.go (80.0%)</option>
 				
-				<option value="file12">route256/cart/internal/cart/ports/vanilla/middleware/recover.go (50.0%)</option>
+				<option value="file12">route256/cart/internal/cart/ports/vanilla/handlers/removecart/removecart.go (100.0%)</option>
 				
-				<option value="file13">route256/cart/internal/cart/ports/vanilla/middleware/writer.go (100.0%)</option>
+				<option value="file13">route256/cart/internal/cart/ports/vanilla/handlers/removeitem/removeitem.go (100.0%)</option>
 				
-				<option value="file14">route256/cart/internal/cart/ports/vanilla/muxer/mux.go (81.8%)</option>
+				<option value="file14">route256/cart/internal/cart/ports/vanilla/middleware/logger.go (100.0%)</option>
 				
-				<option value="file15">route256/cart/internal/cart/ports/vanilla/resources/resources.go (83.3%)</option>
+				<option value="file15">route256/cart/internal/cart/ports/vanilla/middleware/recover.go (50.0%)</option>
 				
-				<option value="file16">route256/cart/internal/cart/ports/vanilla/router.go (92.3%)</option>
+				<option value="file16">route256/cart/internal/cart/ports/vanilla/middleware/writer.go (100.0%)</option>
 				
-				<option value="file17">route256/cart/internal/cart/service.go (81.8%)</option>
+				<option value="file17">route256/cart/internal/cart/ports/vanilla/muxer/mux.go (81.8%)</option>
 				
-				<option value="file18">route256/cart/internal/cart/usecase/usecase.go (100.0%)</option>
+				<option value="file18">route256/cart/internal/cart/ports/vanilla/resources/resources.go (75.0%)</option>
 				
-				<option value="file19">route256/cart/internal/cart/utils/converter/converter.go (100.0%)</option>
+				<option value="file19">route256/cart/internal/cart/ports/vanilla/router.go (100.0%)</option>
+				
+				<option value="file20">route256/cart/internal/cart/service.go (83.3%)</option>
+				
+				<option value="file21">route256/cart/internal/cart/usecase/usecase.go (82.5%)</option>
+				
+				<option value="file22">route256/cart/internal/cart/utils/converter/converter.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -272,6 +278,7 @@ type Client struct {
 }
 
 func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client <span class="cov1" title="1">{
+        log.Debug().Str("host", cfg.Address).Msg("creating new product service client")
         return &amp;Client{
                 baseURL: cfg.Address,
                 token:   cfg.AccessToken,
@@ -283,7 +290,7 @@ func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client <span class=
         }
 }</span>
 
-func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescription, error) <span class="cov10" title="22">{
+func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescription, error) <span class="cov10" title="24">{
         url := fmt.Sprintf("%s/get_product", c.baseURL)
 
         reqBody := getProductReq{
@@ -297,52 +304,52 @@ func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescript
                 return models.ItemDescription{}, err
         }</span>
 
-        <span class="cov10" title="22">req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(data))
+        <span class="cov10" title="24">req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(data))
         if err != nil </span><span class="cov0" title="0">{
                 c.log.Error().Err(err).Send()
                 return models.ItemDescription{}, err
         }</span>
 
-        <span class="cov10" title="22">resp, err := c.client.Do(req)
+        <span class="cov10" title="24">resp, err := c.client.Do(req)
         if err != nil </span><span class="cov0" title="0">{
                 c.log.Error().Err(err).Send()
                 return models.ItemDescription{}, err
         }</span>
-        <span class="cov10" title="22">defer func() </span><span class="cov10" title="22">{
+        <span class="cov10" title="24">defer func() </span><span class="cov10" title="24">{
                 if err = resp.Body.Close(); err != nil </span><span class="cov0" title="0">{
                         c.log.Error().Err(err).Send()
                 }</span>
         }()
 
-        <span class="cov10" title="22">if resp.StatusCode != http.StatusOK </span><span class="cov1" title="1">{
+        <span class="cov10" title="24">if resp.StatusCode != http.StatusOK </span><span class="cov1" title="1">{
                 if resp.StatusCode == http.StatusNotFound </span><span class="cov1" title="1">{
                         return models.ItemDescription{}, models.ErrNotFound
                 }</span>
                 <span class="cov0" title="0">return models.ItemDescription{}, fmt.Errorf("failed to fetch item: status %d", resp.StatusCode)</span>
         }
 
-        <span class="cov9" title="21">return c.validateProductResp(resp.Body)</span>
+        <span class="cov9" title="23">return c.validateProductResp(resp.Body)</span>
 }
 
-func (c *Client) validateProductResp(resp io.Reader) (models.ItemDescription, error) <span class="cov9" title="21">{
+func (c *Client) validateProductResp(resp io.Reader) (models.ItemDescription, error) <span class="cov9" title="23">{
         body, err := io.ReadAll(resp)
         if err != nil </span><span class="cov0" title="0">{
                 c.log.Error().Err(err).Send()
                 return models.ItemDescription{}, err
         }</span>
 
-        <span class="cov9" title="21">var respBody getProductResp
+        <span class="cov9" title="23">var respBody getProductResp
         if err = json.Unmarshal(body, &amp;respBody); err != nil </span><span class="cov0" title="0">{
                 c.log.Error().Err(err).Send()
                 return models.ItemDescription{}, err
         }</span>
 
-        <span class="cov9" title="21">if err = validator.New(validator.WithRequiredStructEnabled()).Struct(respBody); err != nil </span><span class="cov0" title="0">{
+        <span class="cov9" title="23">if err = validator.New(validator.WithRequiredStructEnabled()).Struct(respBody); err != nil </span><span class="cov0" title="0">{
                 c.log.Error().Err(err).Str("error", models.ErrBadProductInfo.Error()).Send()
                 return models.ItemDescription{}, models.ErrBadProductData
         }</span>
 
-        <span class="cov9" title="21">return models.ItemDescription{
+        <span class="cov9" title="23">return models.ItemDescription{
                 Name:  respBody.Name,
                 Price: respBody.Price,
         }, nil</span>
@@ -377,20 +384,20 @@ func Retry(log zerolog.Logger, retries, delay int) func(next http.RoundTripper) 
         }</span>
 }
 
-func (r retryer) RoundTrip(req *http.Request) (*http.Response, error) <span class="cov10" title="22">{
+func (r retryer) RoundTrip(req *http.Request) (*http.Response, error) <span class="cov10" title="24">{
         var (
                 resp *http.Response
                 err  error
         )
 
         sleep := 0
-        for i := 0; i &lt; r.retries; i++ </span><span class="cov10" title="22">{
+        for i := 0; i &lt; r.retries; i++ </span><span class="cov10" title="24">{
                 resp, err = r.next.RoundTrip(req)
                 if err != nil </span><span class="cov0" title="0">{
                         log.Error().Err(err).Send()
                         return nil, err
                 }</span>
-                <span class="cov10" title="22">if resp.StatusCode != 420 &amp;&amp; resp.StatusCode != 429 </span><span class="cov10" title="22">{
+                <span class="cov10" title="24">if resp.StatusCode != 420 &amp;&amp; resp.StatusCode != 429 </span><span class="cov10" title="24">{
                         break</span>
                 }
                 <span class="cov0" title="0">log.Warn().Int("retries left", r.retries-1-i).Send()
@@ -402,11 +409,139 @@ func (r retryer) RoundTrip(req *http.Request) (*http.Response, error) <span clas
                 }</span>
         }
 
-        <span class="cov10" title="22">return resp, err</span>
+        <span class="cov10" title="24">return resp, err</span>
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package additem
+		<pre class="file" id="file4" style="display: none">package stocks
+
+import (
+        "route256/cart/internal/cart/models"
+        lomsservicev1 "route256/cart/pkg/api/loms/v1"
+)
+
+func orderToDTO(order models.Order) *lomsservicev1.OrderCreateRequest <span class="cov0" title="0">{
+        items := make([]*lomsservicev1.Item, 0, len(order.Items))
+
+        for _, item := range order.Items </span><span class="cov0" title="0">{
+                items = append(items, &amp;lomsservicev1.Item{
+                        Sku:   uint32(item.SkuID),
+                        Count: uint32(item.Count),
+                })
+        }</span>
+
+        <span class="cov0" title="0">return &amp;lomsservicev1.OrderCreateRequest{
+                User:  order.UserID,
+                Items: items,
+        }</span>
+}
+
+func skuIDToDTO(skuID int64) *lomsservicev1.StocksInfoRequest <span class="cov10" title="14">{
+        return &amp;lomsservicev1.StocksInfoRequest{
+                Sku: uint32(skuID),
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package stocks
+
+import (
+        "context"
+        "log"
+        "time"
+
+        "route256/cart/config"
+        "route256/cart/internal/cart/models"
+        lomsservicev1 "route256/cart/pkg/api/loms/v1"
+
+        "github.com/pkg/errors"
+        "github.com/rs/zerolog"
+        "google.golang.org/grpc"
+        "google.golang.org/grpc/backoff"
+        "google.golang.org/grpc/codes"
+        "google.golang.org/grpc/credentials/insecure"
+        "google.golang.org/grpc/status"
+)
+
+type Client struct {
+        baseURL string
+        client  lomsservicev1.LOMSClient
+        conn    *grpc.ClientConn
+        log     zerolog.Logger
+}
+
+func New(cfg config.StocksProviderCfg, log zerolog.Logger) (*Client, error) <span class="cov1" title="1">{
+        log.Debug().Str("host", cfg.Address).Msg("creating new stocks service client")
+        backoffConfig := backoff.Config{
+                BaseDelay:  1 * time.Second,
+                Multiplier: 1.6,
+                Jitter:     0.2,
+                MaxDelay:   5 * time.Second,
+        }
+
+        conn, err := grpc.NewClient(cfg.Address,
+                grpc.WithTransportCredentials(insecure.NewCredentials()),
+                grpc.WithConnectParams(grpc.ConnectParams{
+                        Backoff:           backoffConfig,
+                        MinConnectTimeout: 5 * time.Second,
+                }),
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">client := lomsservicev1.NewLOMSClient(conn)
+
+        return &amp;Client{
+                baseURL: cfg.Address,
+                log:     log,
+                client:  client,
+                conn:    conn,
+        }, nil</span>
+}
+
+func (c *Client) Close() error <span class="cov1" title="1">{
+        return c.conn.Close()
+}</span>
+
+func (c *Client) OrderCreate(ctx context.Context, order models.Order) (int64, error) <span class="cov0" title="0">{
+        resp, err := c.client.OrderCreate(ctx, orderToDTO(order))
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, handleError(err)
+        }</span>
+
+        <span class="cov0" title="0">return resp.OrderID, nil</span>
+}
+
+func (c *Client) StocksInfo(ctx context.Context, skuID int64) (uint64, error) <span class="cov10" title="14">{
+        resp, err := c.client.StocksInfo(ctx, skuIDToDTO(skuID))
+        if err != nil </span><span class="cov1" title="1">{
+                return 0, handleError(err)
+        }</span>
+
+        <span class="cov9" title="13">return resp.Count, nil</span>
+}
+
+func handleError(err error) error <span class="cov1" title="1">{
+        st, ok := status.FromError(err)
+        if !ok </span><span class="cov0" title="0">{
+                log.Fatalf("Non-gRPC error: %v", err)
+        }</span>
+
+        <span class="cov1" title="1">switch st.Code() </span>{
+        case codes.NotFound:<span class="cov1" title="1">
+                return errors.Wrap(models.ErrNotFound, err.Error())</span>
+        case codes.FailedPrecondition:<span class="cov0" title="0">
+                return errors.Wrap(models.ErrInsufficientStock, err.Error())</span>
+        case codes.Internal:<span class="cov0" title="0">
+                return errors.Wrap(models.ErrStockProvider, err.Error())</span>
+        default:<span class="cov0" title="0">
+                return err</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package additem
 
 import (
         "context"
@@ -434,14 +569,14 @@ type Handler struct {
         log   zerolog.Logger
 }
 
-func New(log zerolog.Logger, adder CartAdder) *Handler <span class="cov7" title="11">{
+func New(log zerolog.Logger, adder CartAdder) *Handler <span class="cov7" title="13">{
         return &amp;Handler{
                 adder: adder,
                 log:   log,
         }
 }</span>
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="28">{
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov10" title="32">{
         localLog := h.log.With().Str("handler", "add_item").Logger()
 
         // Логирование внутри парсера
@@ -449,7 +584,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
         if err != nil </span><span class="cov7" title="11">{
                 switch </span>{
                 case errors.Is(err, models.ErrInvalidSKUID) || errors.Is(err, models.ErrInvalidUserID) ||
-                        errors.Is(err, models.ErrJSONProcessing) || errors.Is(err, models.ErrBadCount):<span class="cov7" title="10">
+                        errors.Is(err, models.ErrJSONProcessing) || errors.Is(err, models.ErrBadCount):<span class="cov6" title="10">
                         errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)</span>
                 case errors.Is(err, models.ErrReadBody):<span class="cov1" title="1">
                         errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusInternalServerError)</span>
@@ -459,63 +594,145 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
                 <span class="cov7" title="11">return</span>
         }
 
-        <span class="cov8" title="17">if err = h.adder.AddItem(r.Context(), reqData.UserID, reqData.SKUid, reqData.Count); err != nil </span><span class="cov4" title="4">{
+        <span class="cov8" title="21">if err = h.adder.AddItem(r.Context(), reqData.UserID, reqData.SKUid, reqData.Count); err != nil </span><span class="cov6" title="8">{
                 localLog.Error().Err(err).Send()
                 switch </span>{
-                case errors.Is(err, models.ErrNotFound):<span class="cov2" title="2">
-                        errhandle.NewErr(models.ErrItemNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)</span>
+                case errors.Is(err, models.ErrNotFound):<span class="cov3" title="3">
+                        errhandle.NewErr(models.ErrNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)</span>
+                case errors.Is(err, models.ErrInsufficientStock):<span class="cov2" title="2">
+                        errhandle.NewErr(models.ErrInsufficientStock.Error()).Send(w, localLog, http.StatusPreconditionFailed)</span>
                 case errors.Is(err, models.ErrItemProvider):<span class="cov1" title="1">
                         errhandle.NewErr(models.ErrItemProvider.Error()).Send(w, localLog, http.StatusInternalServerError)</span>
+                case errors.Is(err, models.ErrStockProvider):<span class="cov1" title="1">
+                        errhandle.NewErr(models.ErrStockProvider.Error()).Send(w, localLog, http.StatusInternalServerError)</span>
                 default:<span class="cov1" title="1">
                         errhandle.NewErr(models.ErrAddItem.Error()).Send(w, localLog, http.StatusInternalServerError)</span>
                 }
-                <span class="cov4" title="4">return</span>
+                <span class="cov6" title="8">return</span>
         }
 
         <span class="cov7" title="13">w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(http.StatusOK)</span>
 }
 
-func parseDataFromReq(log zerolog.Logger, r *http.Request) (itemCountReq, error) <span class="cov10" title="28">{
+func parseDataFromReq(log zerolog.Logger, r *http.Request) (itemCountReq, error) <span class="cov10" title="32">{
         var itemData itemCountReq
 
         data, err := io.ReadAll(r.Body)
-        defer func() </span><span class="cov10" title="28">{
+        defer func() </span><span class="cov10" title="32">{
                 if err = r.Body.Close(); err != nil </span><span class="cov0" title="0">{
                         log.Error().Err(err).Send()
                 }</span>
         }()
-        <span class="cov10" title="28">if err != nil </span><span class="cov1" title="1">{
+        <span class="cov10" title="32">if err != nil </span><span class="cov1" title="1">{
                 log.Error().Err(err).Send()
                 return itemCountReq{}, models.ErrReadBody
         }</span>
 
-        <span class="cov9" title="27">err = json.Unmarshal(data, &amp;itemData)
+        <span class="cov9" title="31">err = json.Unmarshal(data, &amp;itemData)
         if err != nil </span><span class="cov2" title="2">{
                 log.Error().Err(err).Send()
                 return itemCountReq{}, models.ErrJSONProcessing
         }</span>
 
-        <span class="cov9" title="25">userID, errUserID := converter.UserToInt(r.PathValue(constants.UserID))
+        <span class="cov9" title="29">userID, errUserID := converter.UserToInt(r.PathValue(constants.UserID))
         skuID, errSKUiD := converter.SKUtoInt(r.PathValue(constants.SKUid))
         if err = errors.Join(errUserID, errSKUiD); err != nil </span><span class="cov5" title="6">{
                 log.Error().Err(err).Str(constants.UserID, r.PathValue(constants.UserID)).Send()
                 return itemCountReq{}, err
         }</span>
 
-        <span class="cov8" title="19">if err = validator.New(validator.WithRequiredStructEnabled()).Struct(itemData); err != nil </span><span class="cov2" title="2">{
+        <span class="cov9" title="23">if err = validator.New(validator.WithRequiredStructEnabled()).Struct(itemData); err != nil </span><span class="cov2" title="2">{
                 log.Error().Err(err).Send()
                 return itemCountReq{}, models.ErrBadCount
         }</span>
 
-        <span class="cov8" title="17">itemData.UserID = userID
+        <span class="cov8" title="21">itemData.UserID = userID
         itemData.SKUid = skuID
 
         return itemData, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package errhandle
+		<pre class="file" id="file7" style="display: none">package checkout
+
+import (
+        "context"
+        "encoding/json"
+        "errors"
+        "net/http"
+
+        "route256/cart/internal/cart/constants"
+        "route256/cart/internal/cart/models"
+        "route256/cart/internal/cart/ports/vanilla/handlers/errhandle"
+        "route256/cart/internal/cart/utils/converter"
+
+        "github.com/rs/zerolog"
+)
+
+//go:generate minimock -i CartCheckout -p checkout_test
+type CartCheckout interface {
+        CartCheckout(ctx context.Context, userID int64) (int64, error)
+}
+
+type Handler struct {
+        checkout CartCheckout
+        log      zerolog.Logger
+}
+
+func New(log zerolog.Logger, checkout CartCheckout) *Handler <span class="cov10" title="7">{
+        return &amp;Handler{
+                checkout: checkout,
+                log:      log,
+        }
+}</span>
+
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class="cov9" title="6">{
+        localLog := h.log.With().Str("handler", "cart_checkout").Logger()
+
+        userID, err := converter.UserToInt(r.PathValue(constants.UserID))
+        if err != nil </span><span class="cov1" title="1">{
+                localLog.Error().Err(err).Str(constants.UserID, r.PathValue(constants.UserID)).Send()
+                errhandle.NewErr(err.Error()).Send(w, localLog, http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="5">orderID, err := h.checkout.CartCheckout(r.Context(), userID)
+        if err != nil </span><span class="cov7" title="4">{
+                localLog.Error().Err(err).Send()
+                switch </span>{
+                case errors.Is(err, models.ErrCartIsEmpty):<span class="cov1" title="1">
+                        errhandle.NewErr(models.ErrCartIsEmpty.Error()).Send(w, localLog, http.StatusNotFound)</span>
+                case errors.Is(err, models.ErrNotFound):<span class="cov1" title="1">
+                        errhandle.NewErr(models.ErrNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)</span>
+                case errors.Is(err, models.ErrInsufficientStock):<span class="cov1" title="1">
+                        errhandle.NewErr(models.ErrInsufficientStock.Error()).Send(w, localLog, http.StatusPreconditionFailed)</span>
+                default:<span class="cov1" title="1">
+                        errhandle.NewErr(models.ErrCartCheckout.Error()).Send(w, localLog, http.StatusInternalServerError)</span>
+                }
+                <span class="cov7" title="4">return</span>
+        }
+
+        <span class="cov1" title="1">resp := checkoutResp{
+                OrderID: orderID,
+        }
+
+        data, err := json.Marshal(resp)
+        if err != nil </span><span class="cov0" title="0">{
+                localLog.Error().Err(err).Send()
+                errhandle.NewErr(models.ErrJSONProcessing.Error()).Send(w, localLog, http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov1" title="1">w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        if _, err = w.Write(data); err != nil </span><span class="cov0" title="0">{
+                localLog.Error().Err(err).Send()
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package errhandle
 
 import (
         "encoding/json"
@@ -530,13 +747,13 @@ type ErrResp struct {
         Error string `json:"error"`
 }
 
-func NewErr(err string) ErrResp <span class="cov10" title="28">{
+func NewErr(err string) ErrResp <span class="cov10" title="37">{
         return ErrResp{
                 Error: err,
         }
 }</span>
 
-func (resp ErrResp) Send(w http.ResponseWriter, log zerolog.Logger, code int) <span class="cov10" title="28">{
+func (resp ErrResp) Send(w http.ResponseWriter, log zerolog.Logger, code int) <span class="cov10" title="37">{
         w.Header().Set("Content-Type", "application/json")
         w.WriteHeader(code)
 
@@ -546,7 +763,7 @@ func (resp ErrResp) Send(w http.ResponseWriter, log zerolog.Logger, code int) <s
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package getcart
+		<pre class="file" id="file9" style="display: none">package getcart
 
 import "route256/cart/internal/cart/models"
 
@@ -579,7 +796,7 @@ func itemsToDTO(items models.ItemsInCart) userCartResp <span class="cov7" title=
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package getcart
+		<pre class="file" id="file10" style="display: none">package getcart
 
 import (
         "context"
@@ -629,7 +846,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
                 case errors.Is(err, models.ErrCartIsEmpty):<span class="cov4" title="3">
                         errhandle.NewErr(models.ErrCartIsEmpty.Error()).Send(w, localLog, http.StatusNotFound)</span>
                 case errors.Is(err, models.ErrNotFound):<span class="cov1" title="1">
-                        errhandle.NewErr(models.ErrItemNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)</span>
+                        errhandle.NewErr(models.ErrNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)</span>
                 default:<span class="cov1" title="1">
                         errhandle.NewErr(models.ErrCartCheckout.Error()).Send(w, localLog, http.StatusInternalServerError)</span>
                 }
@@ -653,7 +870,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package healthz
+		<pre class="file" id="file11" style="display: none">package healthz
 
 import (
         "encoding/json"
@@ -673,7 +890,7 @@ func HealthCheck(w http.ResponseWriter, _ *http.Request) <span class="cov8" titl
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package removecart
+		<pre class="file" id="file12" style="display: none">package removecart
 
 import (
         "context"
@@ -725,7 +942,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package removeitem
+		<pre class="file" id="file13" style="display: none">package removeitem
 
 import (
         "context"
@@ -779,7 +996,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package middleware
+		<pre class="file" id="file14" style="display: none">package middleware
 
 import (
         "bytes"
@@ -793,16 +1010,16 @@ import (
 
 func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handler <span class="cov4" title="4">{
         return func(next http.Handler) http.Handler </span><span class="cov4" title="4">{
-                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="39">{
+                return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="41">{
                         var requestBody []byte
-                        if r.Body != nil </span><span class="cov9" title="36">{
+                        if r.Body != nil </span><span class="cov9" title="38">{
                                 bodyBytes, err := io.ReadAll(r.Body)
-                                if err == nil </span><span class="cov9" title="36">{
+                                if err == nil </span><span class="cov9" title="38">{
                                         requestBody = bodyBytes
                                         r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
                                 }</span>
                         }
-                        <span class="cov10" title="39">logger.Info().
+                        <span class="cov10" title="41">logger.Info().
                                 Str("method", r.Method).
                                 Str("path", r.URL.Path).
                                 Str("query", r.URL.RawQuery).
@@ -814,14 +1031,14 @@ func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handl
                                 err:        bytes.NewBuffer(nil),
                                 w:          w,
                         }
-                        defer func(start time.Time) </span><span class="cov10" title="39">{
+                        defer func(start time.Time) </span><span class="cov10" title="41">{
                                 logResp := logger.With().
                                         Int("status_code", ww.statusCode).
                                         Dur("duration", time.Since(start)).
                                         Any("headers", ww.Header()).
                                         Logger()
                                 switch </span>{
-                                case ww.statusCode &gt;= 400 &amp;&amp; ww.statusCode &lt; 500:<span class="cov6" title="10">
+                                case ww.statusCode &gt;= 400 &amp;&amp; ww.statusCode &lt; 500:<span class="cov7" title="12">
                                         logResp.Warn().Err(errors.New(ww.err.String())).Send()</span>
                                 case ww.statusCode &gt;= 500:<span class="cov1" title="1">
                                         logResp.Error().Err(errors.New(ww.err.String())).Send()</span>
@@ -830,13 +1047,13 @@ func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handl
                                 }
                         }(time.Now())
 
-                        <span class="cov10" title="39">next.ServeHTTP(ww, r.WithContext(logger.WithContext(r.Context())))</span>
+                        <span class="cov10" title="41">next.ServeHTTP(ww, r.WithContext(logger.WithContext(r.Context())))</span>
                 })
         }
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package middleware
+		<pre class="file" id="file15" style="display: none">package middleware
 
 import (
         "net/http"
@@ -849,10 +1066,10 @@ import (
 )
 
 func Recover(next http.Handler) http.Handler <span class="cov1" title="1">{
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="36">{
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) </span><span class="cov10" title="38">{
                 logger := *zerolog.Ctx(r.Context())
 
-                defer func() </span><span class="cov10" title="36">{
+                defer func() </span><span class="cov10" title="38">{
                         if rec := recover(); rec != nil </span><span class="cov0" title="0">{
                                 //nolint:errorlint // rec is not an error type
                                 if rec == http.ErrAbortHandler </span><span class="cov0" title="0">{
@@ -864,12 +1081,12 @@ func Recover(next http.Handler) http.Handler <span class="cov1" title="1">{
                         }
                 }()
 
-                <span class="cov10" title="36">next.ServeHTTP(w, r)</span>
+                <span class="cov10" title="38">next.ServeHTTP(w, r)</span>
         })
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package middleware
+		<pre class="file" id="file16" style="display: none">package middleware
 
 import (
         "bytes"
@@ -882,22 +1099,22 @@ type statusWriter struct {
         statusCode int
 }
 
-func (sw *statusWriter) Header() http.Header <span class="cov10" title="78">{
+func (sw *statusWriter) Header() http.Header <span class="cov10" title="82">{
         return sw.w.Header()
 }</span>
 
-func (sw *statusWriter) Write(bytes []byte) (int, error) <span class="cov6" title="18">{
+func (sw *statusWriter) Write(bytes []byte) (int, error) <span class="cov7" title="20">{
         sw.err.Write(bytes)
         return sw.w.Write(bytes)
 }</span>
 
-func (sw *statusWriter) WriteHeader(statusCode int) <span class="cov8" title="39">{
+func (sw *statusWriter) WriteHeader(statusCode int) <span class="cov8" title="41">{
         sw.statusCode = statusCode
         sw.w.WriteHeader(statusCode)
 }</span>
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package muxer
+		<pre class="file" id="file17" style="display: none">package muxer
 
 import "net/http"
 
@@ -940,12 +1157,13 @@ func chain(h http.Handler, m ...Middleware) http.Handler <span class="cov1" titl
 }
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package resources
+		<pre class="file" id="file18" style="display: none">package resources
 
 import (
         "route256/cart/config"
         "route256/cart/internal/cart/adapters/inmem"
         "route256/cart/internal/cart/adapters/prodservice"
+        "route256/cart/internal/cart/adapters/stocks"
         "route256/cart/internal/cart/usecase"
         "route256/cart/pkg/logger"
 
@@ -953,12 +1171,18 @@ import (
 )
 
 type Resources struct {
-        Log     zerolog.Logger
-        UseCase *usecase.UseCase
+        Log           zerolog.Logger
+        UseCase       *usecase.UseCase
+        stopResources []func() error
 }
 
 func NewResources(cfg config.Config) (Resources, error) <span class="cov8" title="1">{
         log, err := logger.New(cfg.LoggerLVL)
+        if err != nil </span><span class="cov0" title="0">{
+                return Resources{}, err
+        }</span>
+
+        <span class="cov8" title="1">stocksProvider, err := stocks.New(cfg.StocksProvider, log)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
@@ -974,18 +1198,29 @@ func NewResources(cfg config.Config) (Resources, error) <span class="cov8" title
                         inMemStorage,
                         inMemStorage,
                         productProvider,
+                        stocksProvider,
                 ),
+                stopResources: []func() error{stocksProvider.Close},
         }, nil</span>
+}
+
+func (r Resources) Stop() <span class="cov8" title="1">{
+        for _, stop := range r.stopResources </span><span class="cov8" title="1">{
+                if err := stop(); err != nil </span><span class="cov0" title="0">{
+                        r.Log.Error().Err(err).Send()
+                }</span>
+        }
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package vanilla
+		<pre class="file" id="file19" style="display: none">package vanilla
 
 import (
         "net/http"
 
         "route256/cart/config"
         "route256/cart/internal/cart/ports/vanilla/handlers/additem"
+        "route256/cart/internal/cart/ports/vanilla/handlers/checkout"
         "route256/cart/internal/cart/ports/vanilla/handlers/getcart"
         "route256/cart/internal/cart/ports/vanilla/handlers/healthz"
         "route256/cart/internal/cart/ports/vanilla/handlers/removecart"
@@ -995,21 +1230,16 @@ import (
         "route256/cart/internal/cart/ports/vanilla/resources"
 )
 
-func NewServer(cfg config.Config) (*http.Server, error) <span class="cov8" title="1">{
+func NewServer(cfg config.Config, res resources.Resources) *http.Server <span class="cov8" title="1">{
         mux := muxer.NewMyMux()
 
-        res, err := resources.NewResources(cfg)
-        if err != nil </span><span class="cov0" title="0">{
-                return nil, err
-        }</span>
-
-        <span class="cov8" title="1">addRoutes(mux, res)
+        addRoutes(mux, res)
 
         return &amp;http.Server{
                 Addr:    cfg.Address,
                 Handler: mux.Chain(),
-        }, nil</span>
-}
+        }
+}</span>
 
 func addRoutes(mux *muxer.MyMux, resources resources.Resources) <span class="cov8" title="1">{
         mux.Use(middleware.LoggingMiddleware(resources.Log))
@@ -1019,11 +1249,12 @@ func addRoutes(mux *muxer.MyMux, resources resources.Resources) <span class="cov
         mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.UseCase))
         mux.Handle("DELETE /user/{user_id}/cart", removecart.New(resources.Log, resources.UseCase))
         mux.Handle("GET /user/{user_id}/cart/list", getcart.New(resources.Log, resources.UseCase))
+        mux.Handle("GET /user/{user_id}/cart/checkout", checkout.New(resources.Log, resources.UseCase))
         mux.HandleFunc("GET /healthz", healthz.HealthCheck)
 }</span>
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package cart
+		<pre class="file" id="file20" style="display: none">package cart
 
 import (
         "context"
@@ -1036,6 +1267,7 @@ import (
 
         "route256/cart/config"
         "route256/cart/internal/cart/ports/vanilla"
+        "route256/cart/internal/cart/ports/vanilla/resources"
 
         "github.com/rs/zerolog/log"
         "golang.org/x/sync/errgroup"
@@ -1047,12 +1279,15 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
         ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
         defer cancel()
 
-        srv, err := vanilla.NewServer(cfg)
+        res, err := resources.NewResources(cfg)
         if err != nil </span><span class="cov0" title="0">{
                 return err
         }</span>
+        <span class="cov8" title="1">defer res.Stop()
 
-        <span class="cov8" title="1">g, gCtx := errgroup.WithContext(ctx)
+        srv := vanilla.NewServer(cfg, res)
+
+        g, gCtx := errgroup.WithContext(ctx)
         g.Go(func() error </span><span class="cov8" title="1">{
                 log.Info().Msg(fmt.Sprintf("starting server: %s", cfg.Address))
                 if err = srv.ListenAndServe(); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) </span><span class="cov0" title="0">{
@@ -1078,7 +1313,7 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package usecase
+		<pre class="file" id="file21" style="display: none">package usecase
 
 import (
         "context"
@@ -1089,6 +1324,7 @@ import (
 
         "route256/cart/internal/cart/models"
 
+        "github.com/rs/zerolog/log"
         "golang.org/x/sync/errgroup"
 )
 
@@ -1117,12 +1353,19 @@ type productProvider interface {
         GetProduct(ctx context.Context, sku int64) (models.ItemDescription, error)
 }
 
+//go:generate minimock -i stocksProvider -p usecase_test
+type stocksProvider interface {
+        OrderCreate(ctx context.Context, order models.Order) (int64, error)
+        StocksInfo(ctx context.Context, skuID int64) (uint64, error)
+}
+
 type UseCase struct {
-        adder       cartAdder
-        itemRemover itemRemover
-        cartRemover cartRemover
-        retriever   cartRetriever
-        provider    productProvider
+        adder         cartAdder
+        itemRemover   itemRemover
+        cartRemover   cartRemover
+        retriever     cartRetriever
+        prodProvider  productProvider
+        stockProvider stocksProvider
 }
 
 func New(
@@ -1130,19 +1373,21 @@ func New(
         itemRemover itemRemover,
         cartRemover cartRemover,
         retriever cartRetriever,
-        provider productProvider,
-) *UseCase <span class="cov9" title="15">{
+        prodProvider productProvider,
+        stockProvider stocksProvider,
+) *UseCase <span class="cov9" title="18">{
         return &amp;UseCase{
-                adder:       adder,
-                itemRemover: itemRemover,
-                cartRemover: cartRemover,
-                retriever:   retriever,
-                provider:    provider,
+                adder:         adder,
+                itemRemover:   itemRemover,
+                cartRemover:   cartRemover,
+                retriever:     retriever,
+                prodProvider:  prodProvider,
+                stockProvider: stockProvider,
         }
 }</span>
 
-func (uc *UseCase) AddItem(ctx context.Context, userID int64, skuID int64, count uint16) error <span class="cov9" title="17">{
-        _, err := uc.provider.GetProduct(ctx, skuID)
+func (uc *UseCase) AddItem(ctx context.Context, userID int64, skuID int64, count uint16) error <span class="cov10" title="22">{
+        _, err := uc.prodProvider.GetProduct(ctx, skuID)
         if err != nil </span><span class="cov4" title="3">{
                 if !errors.Is(err, models.ErrNotFound) </span><span class="cov1" title="1">{
                         return models.ErrItemProvider
@@ -1150,16 +1395,54 @@ func (uc *UseCase) AddItem(ctx context.Context, userID int64, skuID int64, count
                 <span class="cov3" title="2">return err</span>
         }
 
-        <span class="cov9" title="14">return uc.adder.AddItem(ctx, userID, skuID, count)</span>
+        <span class="cov9" title="19">available, err := uc.stockProvider.StocksInfo(ctx, skuID)
+        if err != nil </span><span class="cov4" title="3">{
+                if !errors.Is(err, models.ErrNotFound) </span><span class="cov1" title="1">{
+                        return models.ErrStockProvider
+                }</span>
+                <span class="cov3" title="2">return err</span>
+        }
+
+        <span class="cov9" title="16">if available &lt; uint64(count) </span><span class="cov3" title="2">{
+                return models.ErrInsufficientStock
+        }</span>
+
+        <span class="cov8" title="14">return uc.adder.AddItem(ctx, userID, skuID, count)</span>
 }
 
 func (uc *UseCase) DeleteItem(ctx context.Context, userID int64, skuID int64) error <span class="cov7" title="8">{
         return uc.itemRemover.DeleteItem(ctx, userID, skuID)
 }</span>
 
-func (uc *UseCase) DeleteItemsByUserID(ctx context.Context, userID int64) error <span class="cov6" title="5">{
+func (uc *UseCase) DeleteItemsByUserID(ctx context.Context, userID int64) error <span class="cov5" title="5">{
         return uc.cartRemover.DeleteItemsByUserID(ctx, userID)
 }</span>
+
+func (uc *UseCase) CartCheckout(ctx context.Context, userID int64) (int64, error) <span class="cov0" title="0">{
+        itemSKUs, err := uc.retriever.GetItemsByUserID(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+
+        <span class="cov0" title="0">order := models.Order{
+                UserID: userID,
+                Items:  itemSKUs,
+        }
+
+        orderID, err := uc.stockProvider.OrderCreate(ctx, order)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+
+        // Не будем прокидывать ошибку на весь хендлер, если не удалось удалить корзину (Только залогируем).
+        // Так как заказ был успешно зарегистрирован и стоки забронированы для пользователя
+        <span class="cov0" title="0">err = uc.cartRemover.DeleteItemsByUserID(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Caller().Send()
+        }</span>
+
+        <span class="cov0" title="0">return orderID, nil</span>
+}
 
 func (uc *UseCase) GetItemsByUserID(ctx context.Context, userID int64) (models.ItemsInCart, error) <span class="cov8" title="13">{
         itemSKUs, err := uc.retriever.GetItemsByUserID(ctx, userID)
@@ -1167,7 +1450,7 @@ func (uc *UseCase) GetItemsByUserID(ctx context.Context, userID int64) (models.I
                 return models.ItemsInCart{}, err
         }</span>
 
-        <span class="cov8" title="10">cart, err := calcCart(ctx, uc.provider, itemSKUs)
+        <span class="cov7" title="10">cart, err := calcCart(ctx, uc.prodProvider, itemSKUs)
         if err != nil </span><span class="cov3" title="2">{
                 return models.ItemsInCart{}, err
         }</span>
@@ -1175,7 +1458,7 @@ func (uc *UseCase) GetItemsByUserID(ctx context.Context, userID int64) (models.I
         <span class="cov7" title="8">return cart, nil</span>
 }
 
-func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.Item) (models.ItemsInCart, error) <span class="cov8" title="10">{
+func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.Item) (models.ItemsInCart, error) <span class="cov7" title="10">{
         cart := models.ItemsInCart{
                 Items:      make([]models.Item, 0, len(itemSKUs)),
                 TotalPrice: 0,
@@ -1186,7 +1469,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
         // (должна завершиться только после получения всех ответов от сервиса)
         wg := sync.WaitGroup{}
         wg.Add(1)
-        go func() </span><span class="cov8" title="10">{
+        go func() </span><span class="cov7" title="10">{
                 defer wg.Done()
                 for item := range itemChan </span><span class="cov9" title="16">{
                         cart.TotalPrice += uint32(item.Count) * item.Info.Price
@@ -1195,10 +1478,10 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
         }()
 
         // errgroup для асинхронного опроса Product Service
-        <span class="cov8" title="10">eg, gCtx := errgroup.WithContext(ctx)
-        for _, item := range itemSKUs </span><span class="cov10" title="18">{
+        <span class="cov7" title="10">eg, gCtx := errgroup.WithContext(ctx)
+        for _, item := range itemSKUs </span><span class="cov9" title="18">{
                 item := item
-                eg.Go(func() error </span><span class="cov10" title="18">{
+                eg.Go(func() error </span><span class="cov9" title="18">{
                         ctx, cancel := context.WithTimeout(gCtx, time.Second*2)
                         defer cancel()
 
@@ -1212,7 +1495,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
                         return nil</span>
                 })
         }
-        <span class="cov8" title="10">if err := eg.Wait(); err != nil </span><span class="cov3" title="2">{
+        <span class="cov7" title="10">if err := eg.Wait(); err != nil </span><span class="cov3" title="2">{
                 close(itemChan)
                 return models.ItemsInCart{}, err
         }</span>
@@ -1220,7 +1503,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
         <span class="cov7" title="8">close(itemChan)
         wg.Wait()
 
-        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov6" title="6">{
+        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov6" title="7">{
                 return cart.Items[i].SkuID &lt; cart.Items[j].SkuID
         }</span>)
 
@@ -1228,7 +1511,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
 }
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package converter
+		<pre class="file" id="file22" style="display: none">package converter
 
 import (
         "strconv"
@@ -1236,20 +1519,20 @@ import (
         "route256/cart/internal/cart/models"
 )
 
-func UserToInt(val string) (int64, error) <span class="cov10" title="55">{
+func UserToInt(val string) (int64, error) <span class="cov10" title="65">{
         userID, err := strconv.ParseInt(val, 10, 64)
-        if err != nil || userID &lt;= 0 </span><span class="cov5" title="9">{
+        if err != nil || userID &lt;= 0 </span><span class="cov5" title="10">{
                 return 0, models.ErrInvalidUserID
         }</span>
-        <span class="cov9" title="46">return userID, nil</span>
+        <span class="cov9" title="55">return userID, nil</span>
 }
 
-func SKUtoInt(val string) (int64, error) <span class="cov9" title="36">{
+func SKUtoInt(val string) (int64, error) <span class="cov8" title="40">{
         userID, err := strconv.ParseInt(val, 10, 64)
-        if err != nil || userID &lt;= 0 </span><span class="cov5" title="6">{
+        if err != nil || userID &lt;= 0 </span><span class="cov4" title="6">{
                 return 0, models.ErrInvalidSKUID
         }</span>
-        <span class="cov8" title="30">return userID, nil</span>
+        <span class="cov8" title="34">return userID, nil</span>
 }
 </pre>
 		

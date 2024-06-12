@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog"
 )
 
-//go:generate minimock -i CartCheckout -p getcart_test
+//go:generate minimock -i CartCheckout -p checkout_test
 type CartCheckout interface {
 	CartCheckout(ctx context.Context, userID int64) (int64, error)
 }

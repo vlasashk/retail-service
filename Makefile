@@ -4,8 +4,8 @@ build-all:
 
 
 run-all:
-	docker-compose up --force-recreate --build -d
+	docker compose up --force-recreate --build -d
 
 down:
-	docker-compose down
+	docker compose down
 
