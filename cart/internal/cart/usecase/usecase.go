@@ -120,7 +120,7 @@ func (uc *UseCase) CartCheckout(ctx context.Context, userID int64) (int64, error
 	}
 
 	// Не будем прокидывать ошибку на весь хендлер, если не удалось удалить корзину (Только залогируем).
-	// Так на заказ успешно был зарегистрирован и стоки забронированы для пользователя
+	// Так как заказ был успешно зарегистрирован и стоки забронированы для пользователя
 	err = uc.cartRemover.DeleteItemsByUserID(ctx, userID)
 	if err != nil {
 		log.Error().Err(err).Caller().Send()

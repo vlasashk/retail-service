@@ -29,6 +29,7 @@ func initMocks(t *testing.T) *mocksToUse {
 		CartRemover:     NewCartRemoverMock(mc),
 		ProductProvider: NewProductProviderMock(mc),
 		CartRetriever:   NewCartRetrieverMock(mc),
+		StockProvider:   NewStocksProviderMock(mc),
 	}
 }
 
@@ -54,6 +55,8 @@ func TestAddItem(t *testing.T) {
 		},
 	}
 
+	stockData := uint64(10)
+
 	anyErr := errors.New("any error")
 
 	tests := []struct {
@@ -66,6 +69,7 @@ func TestAddItem(t *testing.T) {
 			name: "AddItemSuccess",
 			mockSetUp: func(m *mocksToUse, userID int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(stockData, nil)
 				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(nil)
 			},
 			userID:      999,
@@ -80,7 +84,7 @@ func TestAddItem(t *testing.T) {
 			expectedErr: models.ErrNotFound,
 		},
 		{
-			name: "AddItemProviderErr",
+			name: "AddItemProductProviderErr",
 			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(models.ItemDescription{}, errors.New("any error"))
 			},
@@ -88,9 +92,37 @@ func TestAddItem(t *testing.T) {
 			expectedErr: models.ErrItemProvider,
 		},
 		{
+			name: "AddItemStockDoesntExist",
+			mockSetUp: func(m *mocksToUse, _ int64) {
+				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, models.ErrNotFound)
+			},
+			userID:      42,
+			expectedErr: models.ErrNotFound,
+		},
+		{
+			name: "AddItemStockProviderErr",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, errors.New("any error"))
+			},
+			userID:      13,
+			expectedErr: models.ErrStockProvider,
+		},
+		{
+			name: "AddItemInsufficientStockErr",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, nil)
+			},
+			userID:      13,
+			expectedErr: models.ErrInsufficientStock,
+		},
+		{
 			name: "AddItemAdderErr",
 			mockSetUp: func(m *mocksToUse, userID int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(stockData, nil)
 				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(anyErr)
 			},
 			userID:      13,
