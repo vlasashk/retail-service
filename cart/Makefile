@@ -23,6 +23,7 @@ unit-test:
     open ./coverage/cover.html && \
     rm ./coverage/cover.out
 
+#Предполагает что необходимое окружение уже поднято (вызывается из корневого Makefile)
 .PHONY: integration-test
 #https://github.com/golang/go/issues/65653
 integration-test: export GOEXPERIMENT=nocoverageredesign
