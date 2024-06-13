@@ -102,7 +102,6 @@ vendor-proto/protoc-gen-openapiv2/options:
 # Также указываем плагины и директории для результата работы плагинов
 .PHONY: .protoc-generate-client
 .protoc-generate-client: .bin-deps .vendor-proto
-	mkdir -p api/openapiv2
 	mkdir -p ${PROTO_GEN_OUT}
 	protoc \
 	-I ${LOMS_PROTO_PATH} \

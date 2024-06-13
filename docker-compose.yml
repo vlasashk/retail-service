@@ -29,7 +29,8 @@ services:
     env_file:
       - ./loms/config/docker.env
     ports:
-      - "50000:50000"
+      - "50000:50000" #gRPC service
+      - "8888:8888" #gRPC gateway
     restart: always
     healthcheck:
       test: ["CMD", "/bin/grpc_health_probe", "-addr=:50000"]

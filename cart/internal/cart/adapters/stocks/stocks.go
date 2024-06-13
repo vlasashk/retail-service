@@ -3,7 +3,6 @@ package stocks
 import (
 	"context"
 	"log"
-	"time"
 
 	"route256/cart/config"
 	"route256/cart/internal/cart/models"
@@ -28,17 +27,17 @@ type Client struct {
 func New(cfg config.StocksProviderCfg, log zerolog.Logger) (*Client, error) {
 	log.Debug().Str("host", cfg.Address).Msg("creating new stocks service client")
 	backoffConfig := backoff.Config{
-		BaseDelay:  1 * time.Second,
-		Multiplier: 1.6,
-		Jitter:     0.2,
-		MaxDelay:   5 * time.Second,
+		BaseDelay:  cfg.BaseDelay,
+		Multiplier: cfg.Multiplier,
+		Jitter:     cfg.Jitter,
+		MaxDelay:   cfg.MaxDelay,
 	}
 
 	conn, err := grpc.NewClient(cfg.Address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff:           backoffConfig,
-			MinConnectTimeout: 5 * time.Second,
+			MinConnectTimeout: cfg.MaxConnTimeout,
 		}),
 	)
 	if err != nil {

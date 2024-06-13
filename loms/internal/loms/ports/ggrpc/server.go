@@ -33,6 +33,7 @@ func buildOptions(log zerolog.Logger) []grpc.ServerOption {
 		grpc.ChainUnaryInterceptor(
 			interceptors.LoggingInterceptor(log),
 			interceptors.RecoverPanic,
+			interceptors.Validate,
 		),
 	}
 }

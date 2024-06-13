@@ -14,8 +14,12 @@ RUN make build
 
 FROM alpine
 WORKDIR /loms
+
 COPY --from=builder /loms/bin/loms ./app
+COPY --from=builder /loms/api/openapiv2/loms.swagger.json ./
+COPY --from=builder /loms/swagger-ui ./swagger-ui
 COPY --from=builder /go/bin/grpc-health-probe /bin/grpc_health_probe
 
-EXPOSE 8082
+EXPOSE 8888
+EXPOSE 50000
 ENTRYPOINT ["/loms/app"]

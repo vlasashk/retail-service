@@ -85,6 +85,10 @@ func (uc *UseCase) OrderPay(ctx context.Context, orderID int64) error {
 		return err
 	}
 
+	if order.Status != models.AwaitingPaymentStatus {
+		return models.ErrPaymentStatusConflict
+	}
+
 	defer func() {
 		if err != nil {
 			uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation removal failed")

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"route256/cart/config"
 	"route256/cart/internal/cart/adapters/prodservice/roundtripper"
@@ -31,7 +30,7 @@ func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client {
 		token:   cfg.AccessToken,
 		client: &http.Client{
 			Transport: roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry)(http.DefaultTransport),
-			Timeout:   time.Duration(cfg.Timeout) * time.Second,
+			Timeout:   cfg.Timeout,
 		},
 		log: log,
 	}

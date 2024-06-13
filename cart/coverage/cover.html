@@ -260,7 +260,6 @@ import (
         "fmt"
         "io"
         "net/http"
-        "time"
 
         "route256/cart/config"
         "route256/cart/internal/cart/adapters/prodservice/roundtripper"
@@ -284,7 +283,7 @@ func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client <span class=
                 token:   cfg.AccessToken,
                 client: &amp;http.Client{
                         Transport: roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry)(http.DefaultTransport),
-                        Timeout:   time.Duration(cfg.Timeout) * time.Second,
+                        Timeout:   cfg.Timeout,
                 },
                 log: log,
         }
@@ -448,7 +447,6 @@ func skuIDToDTO(skuID int64) *lomsservicev1.StocksInfoRequest <span class="cov10
 import (
         "context"
         "log"
-        "time"
 
         "route256/cart/config"
         "route256/cart/internal/cart/models"
@@ -473,17 +471,17 @@ type Client struct {
 func New(cfg config.StocksProviderCfg, log zerolog.Logger) (*Client, error) <span class="cov1" title="1">{
         log.Debug().Str("host", cfg.Address).Msg("creating new stocks service client")
         backoffConfig := backoff.Config{
-                BaseDelay:  1 * time.Second,
-                Multiplier: 1.6,
-                Jitter:     0.2,
-                MaxDelay:   5 * time.Second,
+                BaseDelay:  cfg.BaseDelay,
+                Multiplier: cfg.Multiplier,
+                Jitter:     cfg.Jitter,
+                MaxDelay:   cfg.MaxDelay,
         }
 
         conn, err := grpc.NewClient(cfg.Address,
                 grpc.WithTransportCredentials(insecure.NewCredentials()),
                 grpc.WithConnectParams(grpc.ConnectParams{
                         Backoff:           backoffConfig,
-                        MinConnectTimeout: 5 * time.Second,
+                        MinConnectTimeout: cfg.MaxConnTimeout,
                 }),
         )
         if err != nil </span><span class="cov0" title="0">{
@@ -1503,7 +1501,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
         <span class="cov6" title="8">close(itemChan)
         wg.Wait()
 
-        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov6" title="7">{
+        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov5" title="6">{
                 return cart.Items[i].SkuID &lt; cart.Items[j].SkuID
         }</span>)
 
