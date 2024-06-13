@@ -5,6 +5,7 @@ package suits
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -310,6 +311,83 @@ func (s *IntegrationSuite) TestGetItems() {
 			_ = resp.Body.Close()
 			if len(body) > 0 || len(tt.expectResp) > 0 {
 				s.JSONEq(tt.expectResp, string(body))
+			}
+			tt.tearDown()
+		})
+	}
+}
+
+func (s *IntegrationSuite) TestCheckout() {
+	type response struct {
+		orderID int64 `json:"order_id"`
+	}
+	tests := []struct {
+		name       string
+		setUP      func()
+		tearDown   func()
+		expectCode int
+		userID     int64
+		expectResp string
+	}{
+		{
+			name:       "CheckoutHandlerSuccess",
+			expectCode: http.StatusOK,
+			userID:     defaultUserID,
+			setUP:      func() {},
+			tearDown:   func() {},
+		},
+		{
+			name:       "CheckoutHandlerInsufficientStock",
+			expectCode: http.StatusPreconditionFailed,
+			userID:     defaultUserID,
+			expectResp: `{"error":"insufficient stock"}`,
+			setUP: func() {
+				s.addItemHelper(defaultUserID, additionalItemID, 50)
+				s.addItemHelper(defaultUserID, additionalItemID, 50)
+			},
+			tearDown: func() {
+				s.delItemHelper(defaultUserID, additionalItemID)
+			},
+		},
+		{
+			name:       "CheckoutWrongUserID",
+			expectCode: http.StatusBadRequest,
+			userID:     -1,
+			expectResp: `{"error":"invalid user_id value"}`,
+			setUP:      func() {},
+			tearDown:   func() {},
+		},
+		{
+			name:       "CheckoutProductDoesntExist",
+			expectCode: http.StatusNotFound,
+			userID:     999,
+			expectResp: `{"error":"cart is empty or doesn't exist"}`,
+			setUP:      func() {},
+			tearDown:   func() {},
+		},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			tt.setUP()
+			r, err := http.NewRequest("GET", fmt.Sprintf("%s/user/%d/cart/checkout", s.serviceAddress, tt.userID), nil)
+			s.Require().NoError(err)
+			r.SetPathValue(constants.UserID, strconv.Itoa(int(tt.userID)))
+
+			resp, err := s.client.Do(r)
+			s.Require().NoError(err)
+			s.Equal(tt.expectCode, resp.StatusCode)
+
+			body, err := io.ReadAll(resp.Body)
+			s.Require().NoError(err)
+			_ = resp.Body.Close()
+			if len(body) > 0 || len(tt.expectResp) > 0 {
+				if resp.StatusCode == http.StatusOK {
+					var orderID response
+					s.NoError(json.Unmarshal(body, &orderID))
+				} else {
+					s.JSONEq(tt.expectResp, string(body))
+				}
 			}
 			tt.tearDown()
 		})

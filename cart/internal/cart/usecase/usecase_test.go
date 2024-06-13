@@ -289,6 +289,81 @@ func TestGetItemsByUserID(t *testing.T) {
 	}
 }
 
+func TestCartCheckout(t *testing.T) {
+	t.Parallel()
+	defaultUserID := int64(999)
+
+	testItemAlpha := models.Item{
+		SkuID: 1000,
+		Count: 5,
+	}
+	testItemBeta := models.Item{
+		SkuID: 5000,
+		Count: 7,
+	}
+
+	defaultOrder := models.Order{
+		UserID: defaultUserID,
+		Items:  []models.Item{testItemAlpha, testItemBeta},
+	}
+
+	anyErr := errors.New("any error")
+
+	tests := []struct {
+		name            string
+		mockSetUp       func(*mocksToUse, int64)
+		userID          int64
+		expectedErr     error
+		expectedOrderID int64
+	}{
+		{
+			name: "CartCheckoutSuccess",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.CartRetriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then([]models.Item{testItemAlpha, testItemBeta}, nil)
+				m.StockProvider.OrderCreateMock.When(minimock.AnyContext, defaultOrder).Then(1000, nil)
+				m.CartRemover.DeleteItemsByUserIDMock.When(minimock.AnyContext, userID).Then(nil)
+			},
+			userID:          defaultUserID,
+			expectedErr:     nil,
+			expectedOrderID: 1000,
+		},
+		{
+			name: "CartCheckoutGetItemsErr",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.CartRetriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then(nil, anyErr)
+			},
+			userID:      42,
+			expectedErr: anyErr,
+		},
+		{
+			name: "CartCheckoutDeleteItemsErr",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.CartRetriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then([]models.Item{testItemAlpha, testItemBeta}, nil)
+				m.StockProvider.OrderCreateMock.When(minimock.AnyContext, defaultOrder).Then(1000, nil)
+				m.CartRemover.DeleteItemsByUserIDMock.When(minimock.AnyContext, userID).Then(errors.New("any error"))
+			},
+			userID:          defaultUserID,
+			expectedErr:     nil,
+			expectedOrderID: 1000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mocks := initMocks(t)
+			tt.mockSetUp(mocks, tt.userID)
+			uc := initUseCase(mocks)
+
+			orderID, err := uc.CartCheckout(context.Background(), tt.userID)
+
+			assert.ErrorIs(t, err, tt.expectedErr)
+			assert.Equal(t, orderID, tt.expectedOrderID)
+		})
+	}
+}
+
 func TestDeleteItem(t *testing.T) {
 	t.Parallel()
 	testItem := models.Item{
