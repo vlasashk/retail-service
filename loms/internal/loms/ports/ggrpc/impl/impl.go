@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
+//go:generate minimock -i lomsServer -p impl_test
 type lomsServer interface {
 	OrderCreate(ctx context.Context, order models.Order) (int64, error)
 	OrderInfo(ctx context.Context, orderID int64) (models.Order, error)
@@ -55,6 +56,7 @@ func (i *Impl) OrderInfo(ctx context.Context, req *lomsservicev1.OrderInfoReques
 
 	return OrderToProto(order), nil
 }
+
 func (i *Impl) OrderPay(ctx context.Context, req *lomsservicev1.OrderPayRequest) (*emptypb.Empty, error) {
 	err := i.server.OrderPay(ctx, req.OrderID)
 	if err != nil {

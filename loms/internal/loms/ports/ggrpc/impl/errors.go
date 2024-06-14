@@ -19,7 +19,7 @@ func mapError(err error) error {
 		return status.Error(codes.FailedPrecondition, err.Error())
 	case errors.Is(err, models.ErrReservationConflict):
 		return status.Error(codes.FailedPrecondition, err.Error())
-	case errors.Is(err, models.ErrPaymentStatusConflict):
+	case errors.Is(err, models.ErrOrderStatusConflict):
 		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		return status.Error(codes.Internal, "internal server error")

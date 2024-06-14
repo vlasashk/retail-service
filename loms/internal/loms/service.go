@@ -33,6 +33,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
+	defer res.Stop()
 
 	g, gCtx := errgroup.WithContext(ctx)
 

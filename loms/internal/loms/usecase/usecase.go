@@ -86,7 +86,7 @@ func (uc *UseCase) OrderPay(ctx context.Context, orderID int64) error {
 	}
 
 	if order.Status != models.AwaitingPaymentStatus {
-		return models.ErrPaymentStatusConflict
+		return models.ErrOrderStatusConflict
 	}
 
 	defer func() {
@@ -105,12 +105,19 @@ func (uc *UseCase) OrderPay(ctx context.Context, orderID int64) error {
 		}
 	}()
 
-	return uc.stocks.ReserveRemove(ctx, order)
+	// Нужно записать результата в err что бы его можно было обработать в defer
+	err = uc.stocks.ReserveRemove(ctx, order)
+	return err
 }
 func (uc *UseCase) OrderCancel(ctx context.Context, orderID int64) error {
 	order, err := uc.orders.GetByOrderID(ctx, orderID)
 	if err != nil {
 		return err
+	}
+
+	// Оставим возможность отмены заказа только со статусом new и awaiting_payment
+	if order.Status != models.AwaitingPaymentStatus && order.Status != models.NewStatus {
+		return models.ErrOrderStatusConflict
 	}
 
 	defer func() {
@@ -129,7 +136,9 @@ func (uc *UseCase) OrderCancel(ctx context.Context, orderID int64) error {
 		}
 	}()
 
-	return uc.stocks.ReserveCancel(ctx, order)
+	// Нужно записать результата в err что бы его можно было обработать в defer
+	err = uc.stocks.ReserveCancel(ctx, order)
+	return err
 }
 func (uc *UseCase) StocksInfo(ctx context.Context, skuID uint32) (int64, error) {
 	amount, err := uc.stocks.GetBySKU(ctx, skuID)
