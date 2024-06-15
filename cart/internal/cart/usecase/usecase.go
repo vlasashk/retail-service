@@ -9,6 +9,7 @@ import (
 
 	"route256/cart/internal/cart/models"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -37,12 +38,19 @@ type productProvider interface {
 	GetProduct(ctx context.Context, sku int64) (models.ItemDescription, error)
 }
 
+//go:generate minimock -i stocksProvider -p usecase_test
+type stocksProvider interface {
+	OrderCreate(ctx context.Context, order models.Order) (int64, error)
+	StocksInfo(ctx context.Context, skuID int64) (uint64, error)
+}
+
 type UseCase struct {
-	adder       cartAdder
-	itemRemover itemRemover
-	cartRemover cartRemover
-	retriever   cartRetriever
-	provider    productProvider
+	adder         cartAdder
+	itemRemover   itemRemover
+	cartRemover   cartRemover
+	retriever     cartRetriever
+	prodProvider  productProvider
+	stockProvider stocksProvider
 }
 
 func New(
@@ -50,24 +58,38 @@ func New(
 	itemRemover itemRemover,
 	cartRemover cartRemover,
 	retriever cartRetriever,
-	provider productProvider,
+	prodProvider productProvider,
+	stockProvider stocksProvider,
 ) *UseCase {
 	return &UseCase{
-		adder:       adder,
-		itemRemover: itemRemover,
-		cartRemover: cartRemover,
-		retriever:   retriever,
-		provider:    provider,
+		adder:         adder,
+		itemRemover:   itemRemover,
+		cartRemover:   cartRemover,
+		retriever:     retriever,
+		prodProvider:  prodProvider,
+		stockProvider: stockProvider,
 	}
 }
 
 func (uc *UseCase) AddItem(ctx context.Context, userID int64, skuID int64, count uint16) error {
-	_, err := uc.provider.GetProduct(ctx, skuID)
+	_, err := uc.prodProvider.GetProduct(ctx, skuID)
 	if err != nil {
 		if !errors.Is(err, models.ErrNotFound) {
 			return models.ErrItemProvider
 		}
 		return err
+	}
+
+	available, err := uc.stockProvider.StocksInfo(ctx, skuID)
+	if err != nil {
+		if !errors.Is(err, models.ErrNotFound) {
+			return models.ErrStockProvider
+		}
+		return err
+	}
+
+	if available < uint64(count) {
+		return models.ErrInsufficientStock
 	}
 
 	return uc.adder.AddItem(ctx, userID, skuID, count)
@@ -81,13 +103,39 @@ func (uc *UseCase) DeleteItemsByUserID(ctx context.Context, userID int64) error 
 	return uc.cartRemover.DeleteItemsByUserID(ctx, userID)
 }
 
+func (uc *UseCase) CartCheckout(ctx context.Context, userID int64) (int64, error) {
+	itemSKUs, err := uc.retriever.GetItemsByUserID(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	order := models.Order{
+		UserID: userID,
+		Items:  itemSKUs,
+	}
+
+	orderID, err := uc.stockProvider.OrderCreate(ctx, order)
+	if err != nil {
+		return 0, err
+	}
+
+	// Не будем прокидывать ошибку на весь хендлер, если не удалось удалить корзину (Только залогируем).
+	// Так как заказ был успешно зарегистрирован и стоки забронированы для пользователя
+	err = uc.cartRemover.DeleteItemsByUserID(ctx, userID)
+	if err != nil {
+		log.Error().Err(err).Caller().Send()
+	}
+
+	return orderID, nil
+}
+
 func (uc *UseCase) GetItemsByUserID(ctx context.Context, userID int64) (models.ItemsInCart, error) {
 	itemSKUs, err := uc.retriever.GetItemsByUserID(ctx, userID)
 	if err != nil {
 		return models.ItemsInCart{}, err
 	}
 
-	cart, err := calcCart(ctx, uc.provider, itemSKUs)
+	cart, err := calcCart(ctx, uc.prodProvider, itemSKUs)
 	if err != nil {
 		return models.ItemsInCart{}, err
 	}

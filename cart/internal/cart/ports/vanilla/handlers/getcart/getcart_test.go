@@ -103,7 +103,7 @@ func TestGetCartHandler(t *testing.T) {
 				m.Retriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then(models.ItemsInCart{}, models.ErrNotFound)
 			},
 			userID:     42,
-			expectResp: `{"error":"item not found"}`,
+			expectResp: `{"error":"not found"}`,
 		},
 	}
 

@@ -18,6 +18,7 @@ type mocksToUse struct {
 	CartRemover     *CartRemoverMock
 	ProductProvider *ProductProviderMock
 	CartRetriever   *CartRetrieverMock
+	StockProvider   *StocksProviderMock
 }
 
 func initMocks(t *testing.T) *mocksToUse {
@@ -28,6 +29,7 @@ func initMocks(t *testing.T) *mocksToUse {
 		CartRemover:     NewCartRemoverMock(mc),
 		ProductProvider: NewProductProviderMock(mc),
 		CartRetriever:   NewCartRetrieverMock(mc),
+		StockProvider:   NewStocksProviderMock(mc),
 	}
 }
 
@@ -38,6 +40,7 @@ func initUseCase(mocks *mocksToUse) *usecase.UseCase {
 		mocks.CartRemover,
 		mocks.CartRetriever,
 		mocks.ProductProvider,
+		mocks.StockProvider,
 	)
 }
 
@@ -52,6 +55,8 @@ func TestAddItem(t *testing.T) {
 		},
 	}
 
+	stockData := uint64(10)
+
 	anyErr := errors.New("any error")
 
 	tests := []struct {
@@ -64,6 +69,7 @@ func TestAddItem(t *testing.T) {
 			name: "AddItemSuccess",
 			mockSetUp: func(m *mocksToUse, userID int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(stockData, nil)
 				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(nil)
 			},
 			userID:      999,
@@ -78,7 +84,7 @@ func TestAddItem(t *testing.T) {
 			expectedErr: models.ErrNotFound,
 		},
 		{
-			name: "AddItemProviderErr",
+			name: "AddItemProductProviderErr",
 			mockSetUp: func(m *mocksToUse, _ int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(models.ItemDescription{}, errors.New("any error"))
 			},
@@ -86,9 +92,37 @@ func TestAddItem(t *testing.T) {
 			expectedErr: models.ErrItemProvider,
 		},
 		{
+			name: "AddItemStockDoesntExist",
+			mockSetUp: func(m *mocksToUse, _ int64) {
+				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, models.ErrNotFound)
+			},
+			userID:      42,
+			expectedErr: models.ErrNotFound,
+		},
+		{
+			name: "AddItemStockProviderErr",
+			mockSetUp: func(m *mocksToUse, _ int64) {
+				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, errors.New("any error"))
+			},
+			userID:      13,
+			expectedErr: models.ErrStockProvider,
+		},
+		{
+			name: "AddItemInsufficientStockErr",
+			mockSetUp: func(m *mocksToUse, _ int64) {
+				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(0, nil)
+			},
+			userID:      13,
+			expectedErr: models.ErrInsufficientStock,
+		},
+		{
 			name: "AddItemAdderErr",
 			mockSetUp: func(m *mocksToUse, userID int64) {
 				m.ProductProvider.GetProductMock.When(minimock.AnyContext, testItem.SkuID).Then(testItem.Info, nil)
+				m.StockProvider.StocksInfoMock.When(minimock.AnyContext, testItem.SkuID).Then(stockData, nil)
 				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(anyErr)
 			},
 			userID:      13,
@@ -251,6 +285,81 @@ func TestGetItemsByUserID(t *testing.T) {
 
 			assert.ErrorIs(t, err, tt.expectedErr)
 			assert.Equal(t, items, tt.expectedItems)
+		})
+	}
+}
+
+func TestCartCheckout(t *testing.T) {
+	t.Parallel()
+	defaultUserID := int64(999)
+
+	testItemAlpha := models.Item{
+		SkuID: 1000,
+		Count: 5,
+	}
+	testItemBeta := models.Item{
+		SkuID: 5000,
+		Count: 7,
+	}
+
+	defaultOrder := models.Order{
+		UserID: defaultUserID,
+		Items:  []models.Item{testItemAlpha, testItemBeta},
+	}
+
+	anyErr := errors.New("any error")
+
+	tests := []struct {
+		name            string
+		mockSetUp       func(*mocksToUse, int64)
+		userID          int64
+		expectedErr     error
+		expectedOrderID int64
+	}{
+		{
+			name: "CartCheckoutSuccess",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.CartRetriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then([]models.Item{testItemAlpha, testItemBeta}, nil)
+				m.StockProvider.OrderCreateMock.When(minimock.AnyContext, defaultOrder).Then(1000, nil)
+				m.CartRemover.DeleteItemsByUserIDMock.When(minimock.AnyContext, userID).Then(nil)
+			},
+			userID:          defaultUserID,
+			expectedErr:     nil,
+			expectedOrderID: 1000,
+		},
+		{
+			name: "CartCheckoutGetItemsErr",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.CartRetriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then(nil, anyErr)
+			},
+			userID:      42,
+			expectedErr: anyErr,
+		},
+		{
+			name: "CartCheckoutDeleteItemsErr",
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.CartRetriever.GetItemsByUserIDMock.When(minimock.AnyContext, userID).Then([]models.Item{testItemAlpha, testItemBeta}, nil)
+				m.StockProvider.OrderCreateMock.When(minimock.AnyContext, defaultOrder).Then(1000, nil)
+				m.CartRemover.DeleteItemsByUserIDMock.When(minimock.AnyContext, userID).Then(errors.New("any error"))
+			},
+			userID:          defaultUserID,
+			expectedErr:     nil,
+			expectedOrderID: 1000,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			mocks := initMocks(t)
+			tt.mockSetUp(mocks, tt.userID)
+			uc := initUseCase(mocks)
+
+			orderID, err := uc.CartCheckout(context.Background(), tt.userID)
+
+			assert.ErrorIs(t, err, tt.expectedErr)
+			assert.Equal(t, orderID, tt.expectedOrderID)
 		})
 	}
 }

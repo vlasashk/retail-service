@@ -1,0 +1,328 @@
+syntax = "proto3";
+
+package loms.service.v1;
+
+option go_package = "route256/loms/api/loms/v1;lomsservicev1";
+
+
+import "google/protobuf/empty.proto";
+import "validate/validate.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+    info: {
+        title: "LOMS Service";
+        version: "1.0.0";
+    };
+    schemes: HTTP;
+    schemes: HTTPS;
+    consumes: "application/json";
+    produces: "application/json";
+    responses: {
+        key: "404";
+        value: {
+            description: "Resource not found";
+            schema: {
+                json_schema: {
+                    type: OBJECT,
+                }
+            }
+            examples: {
+                key: "application/json";
+                value: "{\"error\":\"not found\"}";
+            }
+        }
+    }
+    responses: {
+        key: "500"
+        value: {
+            description: "Internal server error"
+            schema: {
+                json_schema: {
+                    type: OBJECT
+                }
+            }
+            examples: {
+                key: "application/json";
+                value: "{\"error\":\"Internal server error\"}";
+            }
+        }
+    }
+};
+
+
+service LOMS {
+    rpc OrderCreate(OrderCreateRequest) returns(OrderCreateResponse) {
+        option (google.api.http) = {
+            post: "/v1/orders/create"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            responses: {
+                key: "200"
+                value: {
+                    description: "Order created successfully"
+                    schema: {
+                        json_schema: {
+                            ref: ".loms.service.v1.OrderCreateResponse"
+                        }
+                    }
+                    examples: {
+                        key: "application/json"
+                        value: "{\"orderID\": 12345}"
+                    }
+                }
+            }
+            responses: {
+                key: "412";
+                value: {
+                    description: "Resource is insufficient or there is a reservation conflict"
+                    schema: {
+                        json_schema: {
+                            type: OBJECT
+                        }
+                    }
+                    examples: {
+                        key: "application/json"
+                        value: "{\"error\":\"insufficient stock\"}"
+                    }
+                }
+            }
+        };
+    };
+    rpc OrderInfo(OrderInfoRequest) returns(OrderInfoResponse){
+        option (google.api.http) = {
+            get: "/v1/orders/{orderID}"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            responses: {
+                key: "200"
+                value: {
+                    description: "Order information retrieved successfully"
+                    schema: {
+                        json_schema: {
+                            ref: ".loms.service.v1.OrderInfoResponse"
+                        }
+                    }
+                    examples: {
+                        key: "application/json"
+                        value: "{\"user\": 1001, \"items\": [{\"sku\": 1076963, \"count\": 2}], \"status\": \"STATUS_AWAITING_PAYMENT\"}"
+                    }
+                }
+            }
+        };
+    }
+    rpc OrderPay(OrderPayRequest) returns(google.protobuf.Empty){
+        option (google.api.http) = {
+            post: "/v1/orders/pay"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            responses: {
+                key: "200"
+                value: {
+                    description: "Order paid successfully"
+                }
+            }
+            responses: {
+                key: "412";
+                value: {
+                    description: "Resource is insufficient or there is a reservation conflict"
+                    schema: {
+                        json_schema: {
+                            type: OBJECT
+                        }
+                    }
+                    examples: {
+                        key: "application/json"
+                        value: "{\"error\":\"insufficient stock\"}"
+                    }
+                }
+            }
+        };
+    }
+    rpc OrderCancel(OrderCancelRequest) returns(google.protobuf.Empty){
+        option (google.api.http) = {
+            post: "/v1/orders/cancel"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            responses: {
+                key: "200"
+                value: {
+                    description: "Order canceled successfully"
+                }
+            }
+            responses: {
+                key: "412";
+                value: {
+                    description: "Resource is insufficient or there is a reservation conflict"
+                    schema: {
+                        json_schema: {
+                            type: OBJECT
+                        }
+                    }
+                    examples: {
+                        key: "application/json";
+                        value: "{\"error\":\"insufficient stock\"}"
+                    }
+                }
+            }
+        };
+    }
+    rpc StocksInfo(StocksInfoRequest) returns(StocksInfoResponse){
+        option (google.api.http) = {
+            get: "/v1/stocks/{sku}"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            responses: {
+                key: "200"
+                value: {
+                    description: "Stock information retrieved successfully"
+                    schema: {
+                        json_schema: {
+                            ref: ".loms.service.v1.StocksInfoResponse"
+                        }
+                    }
+                    examples: {
+                        key: "application/json"
+                        value: "{\"count\": 100}"
+                    }
+                }
+            }
+        };
+    }
+}
+
+enum Status {
+    STATUS_UNKNOWN = 0;
+    STATUS_NEW = 1;
+    STATUS_AWAITING_PAYMENT = 2;
+    STATUS_PAYED = 3;
+    STATUS_CANCELLED = 4;
+    STATUS_FAILED = 5;
+}
+
+message Item {
+    uint32 sku = 1 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "SKU",
+            description: "Stock Keeping Unit identifier",
+            format: "uint32",
+            default: "1076963"
+        },
+        (validate.rules).uint32.gt = 0
+    ];
+    uint32 count = 2 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "Count",
+            description: "Number of items",
+            format: "uint32"
+            default: "3"
+        },
+        (validate.rules).uint32.gt = 0
+    ];
+}
+
+message OrderCreateRequest {
+    int64 user = 1 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "User ID",
+            description: "User identifier",
+            format: "int64",
+            default: "1111"
+        },
+        (validate.rules).int64.gt = 0
+    ];
+    repeated Item items = 2 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "Items",
+            description: "Items to be included in the order"
+        },
+        (validate.rules).repeated.min_items = 1
+    ];
+}
+
+message OrderCreateResponse {
+    int64 orderID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        title: "Order ID",
+        description: "Unique identifier for the created order",
+        format: "int64",
+        default: "1"
+    }];
+}
+
+message OrderInfoRequest {
+    int64 orderID = 1 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "Order ID",
+            description: "Unique identifier of the order",
+            format: "int64",
+            default: "1"
+        },
+        (validate.rules).int64.gt = 0
+    ];
+}
+
+message OrderInfoResponse {
+    int64 user = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        title: "User ID",
+        description: "Identifier of the user who placed the order",
+        format: "int64",
+        default: "1111"
+    }];
+    repeated Item items = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        title: "Items",
+        description: "List of items in the order"
+    }];
+    Status status = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        title: "Order Status",
+        description: "Current status of the order"
+    }];
+}
+
+message OrderPayRequest {
+    int64 orderID = 1 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "Order ID",
+            description: "Unique identifier of the order to be paid",
+            format: "int64",
+            default: "1"
+        },
+        (validate.rules).int64.gt = 0
+    ];
+}
+
+message OrderCancelRequest {
+    int64 orderID = 1 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "Order ID",
+            description: "Unique identifier of the order to be canceled",
+            format: "int64",
+            default: "1"
+        },
+        (validate.rules).int64.gt = 0
+    ];
+}
+
+message StocksInfoRequest {
+    uint32 sku = 1 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            title: "SKU",
+            description: "Stock Keeping Unit identifier",
+            format: "uint32",
+            default: "1076963"
+        },
+        (validate.rules).uint32.gt = 0
+    ];
+}
+
+message StocksInfoResponse {
+    uint64 count = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        title: "Count",
+        description: "Number of items in stock",
+        format: "uint32",
+        default: "10"
+    }];
+}
