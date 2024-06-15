@@ -4,7 +4,7 @@ import (
 	"route256/loms/config"
 	"route256/loms/internal/loms/ports/ggrpc/impl"
 	"route256/loms/internal/loms/ports/ggrpc/interceptors"
-	"route256/loms/internal/loms/ports/ggrpc/resources"
+	"route256/loms/internal/loms/resources"
 	lomsservicev1 "route256/loms/pkg/api/loms/v1"
 
 	"github.com/rs/zerolog"

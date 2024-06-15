@@ -12,7 +12,7 @@ import (
 	"route256/cart/internal/cart/ports/vanilla/handlers/removeitem"
 	"route256/cart/internal/cart/ports/vanilla/middleware"
 	"route256/cart/internal/cart/ports/vanilla/muxer"
-	"route256/cart/internal/cart/ports/vanilla/resources"
+	"route256/cart/internal/cart/resources"
 )
 
 func NewServer(cfg config.Config, res resources.Resources) *http.Server {

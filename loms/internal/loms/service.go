@@ -12,8 +12,8 @@ import (
 
 	"route256/loms/config"
 	"route256/loms/internal/loms/ports/ggrpc"
-	"route256/loms/internal/loms/ports/ggrpc/resources"
 	"route256/loms/internal/loms/ports/httpgate"
+	"route256/loms/internal/loms/resources"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"

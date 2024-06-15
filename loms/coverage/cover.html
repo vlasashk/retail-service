@@ -71,13 +71,13 @@
 				
 				<option value="file7">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
 				
-				<option value="file8">route256/loms/internal/loms/ports/ggrpc/resources/resources.go (63.6%)</option>
+				<option value="file8">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
 				
-				<option value="file9">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
+				<option value="file9">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
 				
-				<option value="file10">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
+				<option value="file10">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
 				
-				<option value="file11">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
+				<option value="file11">route256/loms/internal/loms/resources/resources.go (63.6%)</option>
 				
 				<option value="file12">route256/loms/internal/loms/service.go (82.4%)</option>
 				
@@ -681,65 +681,13 @@ func Validate(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grp
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package resources
-
-import (
-        "route256/loms/config"
-        "route256/loms/internal/loms/adapters/ordersmem"
-        "route256/loms/internal/loms/adapters/stocksmem"
-        "route256/loms/internal/loms/usecase"
-
-        "route256/loms/pkg/logger"
-
-        "github.com/rs/zerolog"
-)
-
-type Resources struct {
-        Log           zerolog.Logger
-        UseCase       *usecase.UseCase
-        stopResources []func() error
-}
-
-func New(cfg config.Config) (Resources, error) <span class="cov8" title="1">{
-        log, err := logger.New(cfg.LoggerLVL)
-        if err != nil </span><span class="cov0" title="0">{
-                return Resources{}, err
-        }</span>
-
-        <span class="cov8" title="1">stockStorage, err := stocksmem.New()
-        if err != nil </span><span class="cov0" title="0">{
-                return Resources{}, err
-        }</span>
-
-        <span class="cov8" title="1">orderStorage := ordersmem.New()
-
-        return Resources{
-                Log: log,
-                UseCase: usecase.New(
-                        log,
-                        orderStorage,
-                        stockStorage,
-                ),
-                stopResources: []func() error{},
-        }, nil</span>
-}
-
-func (r Resources) Stop() <span class="cov8" title="1">{
-        for _, stop := range r.stopResources </span><span class="cov0" title="0">{
-                if err := stop(); err != nil </span><span class="cov0" title="0">{
-                        r.Log.Error().Err(err).Send()
-                }</span>
-        }
-}
-</pre>
-		
-		<pre class="file" id="file9" style="display: none">package ggrpc
+		<pre class="file" id="file8" style="display: none">package ggrpc
 
 import (
         "route256/loms/config"
         "route256/loms/internal/loms/ports/ggrpc/impl"
         "route256/loms/internal/loms/ports/ggrpc/interceptors"
-        "route256/loms/internal/loms/ports/ggrpc/resources"
+        "route256/loms/internal/loms/resources"
         lomsservicev1 "route256/loms/pkg/api/loms/v1"
 
         "github.com/rs/zerolog"
@@ -774,7 +722,7 @@ func buildOptions(log zerolog.Logger) []grpc.ServerOption <span class="cov8" tit
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package httpgate
+		<pre class="file" id="file9" style="display: none">package httpgate
 
 import (
         "context"
@@ -826,7 +774,7 @@ func customErr(w http.ResponseWriter, code int, msg string) <span class="cov0" t
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package httpgate
+		<pre class="file" id="file10" style="display: none">package httpgate
 
 import (
         "context"
@@ -872,6 +820,58 @@ func New(ctx context.Context, cfg config.HTTPGateCfg) (*http.Server, error) <spa
 }
 </pre>
 		
+		<pre class="file" id="file11" style="display: none">package resources
+
+import (
+        "route256/loms/config"
+        "route256/loms/internal/loms/adapters/ordersmem"
+        "route256/loms/internal/loms/adapters/stocksmem"
+        "route256/loms/internal/loms/usecase"
+
+        "route256/loms/pkg/logger"
+
+        "github.com/rs/zerolog"
+)
+
+type Resources struct {
+        Log           zerolog.Logger
+        UseCase       *usecase.UseCase
+        stopResources []func() error
+}
+
+func New(cfg config.Config) (Resources, error) <span class="cov8" title="1">{
+        log, err := logger.New(cfg.LoggerLVL)
+        if err != nil </span><span class="cov0" title="0">{
+                return Resources{}, err
+        }</span>
+
+        <span class="cov8" title="1">stockStorage, err := stocksmem.New()
+        if err != nil </span><span class="cov0" title="0">{
+                return Resources{}, err
+        }</span>
+
+        <span class="cov8" title="1">orderStorage := ordersmem.New()
+
+        return Resources{
+                Log: log,
+                UseCase: usecase.New(
+                        log,
+                        orderStorage,
+                        stockStorage,
+                ),
+                stopResources: []func() error{},
+        }, nil</span>
+}
+
+func (r Resources) Stop() <span class="cov8" title="1">{
+        for _, stop := range r.stopResources </span><span class="cov0" title="0">{
+                if err := stop(); err != nil </span><span class="cov0" title="0">{
+                        r.Log.Error().Err(err).Send()
+                }</span>
+        }
+}
+</pre>
+		
 		<pre class="file" id="file12" style="display: none">package loms
 
 import (
@@ -886,8 +886,8 @@ import (
 
         "route256/loms/config"
         "route256/loms/internal/loms/ports/ggrpc"
-        "route256/loms/internal/loms/ports/ggrpc/resources"
         "route256/loms/internal/loms/ports/httpgate"
+        "route256/loms/internal/loms/resources"
 
         "github.com/rs/zerolog/log"
         "golang.org/x/sync/errgroup"

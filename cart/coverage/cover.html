@@ -91,9 +91,9 @@
 				
 				<option value="file17">route256/cart/internal/cart/ports/vanilla/muxer/mux.go (81.8%)</option>
 				
-				<option value="file18">route256/cart/internal/cart/ports/vanilla/resources/resources.go (75.0%)</option>
+				<option value="file18">route256/cart/internal/cart/ports/vanilla/router.go (100.0%)</option>
 				
-				<option value="file19">route256/cart/internal/cart/ports/vanilla/router.go (100.0%)</option>
+				<option value="file19">route256/cart/internal/cart/resources/resources.go (75.0%)</option>
 				
 				<option value="file20">route256/cart/internal/cart/service.go (83.3%)</option>
 				
@@ -1155,7 +1155,48 @@ func chain(h http.Handler, m ...Middleware) http.Handler <span class="cov1" titl
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package resources
+		<pre class="file" id="file18" style="display: none">package vanilla
+
+import (
+        "net/http"
+
+        "route256/cart/config"
+        "route256/cart/internal/cart/ports/vanilla/handlers/additem"
+        "route256/cart/internal/cart/ports/vanilla/handlers/checkout"
+        "route256/cart/internal/cart/ports/vanilla/handlers/getcart"
+        "route256/cart/internal/cart/ports/vanilla/handlers/healthz"
+        "route256/cart/internal/cart/ports/vanilla/handlers/removecart"
+        "route256/cart/internal/cart/ports/vanilla/handlers/removeitem"
+        "route256/cart/internal/cart/ports/vanilla/middleware"
+        "route256/cart/internal/cart/ports/vanilla/muxer"
+        "route256/cart/internal/cart/resources"
+)
+
+func NewServer(cfg config.Config, res resources.Resources) *http.Server <span class="cov8" title="1">{
+        mux := muxer.NewMyMux()
+
+        addRoutes(mux, res)
+
+        return &amp;http.Server{
+                Addr:    cfg.Address,
+                Handler: mux.Chain(),
+        }
+}</span>
+
+func addRoutes(mux *muxer.MyMux, resources resources.Resources) <span class="cov8" title="1">{
+        mux.Use(middleware.LoggingMiddleware(resources.Log))
+        mux.Use(middleware.Recover)
+
+        mux.Handle("POST /user/{user_id}/cart/{sku_id}", additem.New(resources.Log, resources.UseCase))
+        mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.UseCase))
+        mux.Handle("DELETE /user/{user_id}/cart", removecart.New(resources.Log, resources.UseCase))
+        mux.Handle("GET /user/{user_id}/cart/list", getcart.New(resources.Log, resources.UseCase))
+        mux.Handle("GET /user/{user_id}/cart/checkout", checkout.New(resources.Log, resources.UseCase))
+        mux.HandleFunc("GET /healthz", healthz.HealthCheck)
+}</span>
+</pre>
+		
+		<pre class="file" id="file19" style="display: none">package resources
 
 import (
         "route256/cart/config"
@@ -1211,47 +1252,6 @@ func (r Resources) Stop() <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package vanilla
-
-import (
-        "net/http"
-
-        "route256/cart/config"
-        "route256/cart/internal/cart/ports/vanilla/handlers/additem"
-        "route256/cart/internal/cart/ports/vanilla/handlers/checkout"
-        "route256/cart/internal/cart/ports/vanilla/handlers/getcart"
-        "route256/cart/internal/cart/ports/vanilla/handlers/healthz"
-        "route256/cart/internal/cart/ports/vanilla/handlers/removecart"
-        "route256/cart/internal/cart/ports/vanilla/handlers/removeitem"
-        "route256/cart/internal/cart/ports/vanilla/middleware"
-        "route256/cart/internal/cart/ports/vanilla/muxer"
-        "route256/cart/internal/cart/ports/vanilla/resources"
-)
-
-func NewServer(cfg config.Config, res resources.Resources) *http.Server <span class="cov8" title="1">{
-        mux := muxer.NewMyMux()
-
-        addRoutes(mux, res)
-
-        return &amp;http.Server{
-                Addr:    cfg.Address,
-                Handler: mux.Chain(),
-        }
-}</span>
-
-func addRoutes(mux *muxer.MyMux, resources resources.Resources) <span class="cov8" title="1">{
-        mux.Use(middleware.LoggingMiddleware(resources.Log))
-        mux.Use(middleware.Recover)
-
-        mux.Handle("POST /user/{user_id}/cart/{sku_id}", additem.New(resources.Log, resources.UseCase))
-        mux.Handle("DELETE /user/{user_id}/cart/{sku_id}", removeitem.New(resources.Log, resources.UseCase))
-        mux.Handle("DELETE /user/{user_id}/cart", removecart.New(resources.Log, resources.UseCase))
-        mux.Handle("GET /user/{user_id}/cart/list", getcart.New(resources.Log, resources.UseCase))
-        mux.Handle("GET /user/{user_id}/cart/checkout", checkout.New(resources.Log, resources.UseCase))
-        mux.HandleFunc("GET /healthz", healthz.HealthCheck)
-}</span>
-</pre>
-		
 		<pre class="file" id="file20" style="display: none">package cart
 
 import (
@@ -1265,7 +1265,7 @@ import (
 
         "route256/cart/config"
         "route256/cart/internal/cart/ports/vanilla"
-        "route256/cart/internal/cart/ports/vanilla/resources"
+        "route256/cart/internal/cart/resources"
 
         "github.com/rs/zerolog/log"
         "golang.org/x/sync/errgroup"

@@ -11,7 +11,7 @@ import (
 
 	"route256/cart/config"
 	"route256/cart/internal/cart/ports/vanilla"
-	"route256/cart/internal/cart/ports/vanilla/resources"
+	"route256/cart/internal/cart/resources"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
