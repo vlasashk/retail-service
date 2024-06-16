@@ -1,0 +1,1131 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>ordersmem: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">route256/loms/internal/loms/adapters/ordersmem/orders.go (91.7%)</option>
+				
+				<option value="file1">route256/loms/internal/loms/adapters/stocksmem/stocks.go (80.5%)</option>
+				
+				<option value="file2">route256/loms/internal/loms/ports/ggrpc/impl/dto.go (82.4%)</option>
+				
+				<option value="file3">route256/loms/internal/loms/ports/ggrpc/impl/errors.go (100.0%)</option>
+				
+				<option value="file4">route256/loms/internal/loms/ports/ggrpc/impl/impl.go (100.0%)</option>
+				
+				<option value="file5">route256/loms/internal/loms/ports/ggrpc/interceptors/logger.go (77.8%)</option>
+				
+				<option value="file6">route256/loms/internal/loms/ports/ggrpc/interceptors/recover.go (66.7%)</option>
+				
+				<option value="file7">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
+				
+				<option value="file8">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
+				
+				<option value="file9">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
+				
+				<option value="file10">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
+				
+				<option value="file11">route256/loms/internal/loms/resources/resources.go (63.6%)</option>
+				
+				<option value="file12">route256/loms/internal/loms/service.go (82.4%)</option>
+				
+				<option value="file13">route256/loms/internal/loms/usecase/usecase.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package ordersmem
+
+import (
+        "context"
+        "math/rand/v2"
+        "sync"
+        "time"
+
+        "route256/loms/internal/loms/models"
+)
+
+type userOrder struct {
+        models.Order
+        createdAt time.Time
+}
+
+type Orders struct {
+        mu     sync.RWMutex
+        orders map[int64]userOrder
+}
+
+func New() *Orders <span class="cov1" title="1">{
+        return &amp;Orders{
+                mu:     sync.RWMutex{},
+                orders: make(map[int64]userOrder),
+        }
+}</span>
+
+func (o *Orders) Create(_ context.Context, order models.Order) (int64, error) <span class="cov8" title="10">{
+        o.mu.Lock()
+        defer o.mu.Unlock()
+
+        orderID := rand.Int64()
+
+        for _, exist := o.orders[orderID]; exist; </span><span class="cov0" title="0">{
+                orderID = rand.Int64()
+        }</span>
+
+        <span class="cov8" title="10">orderToCreat := userOrder{
+                Order:     order,
+                createdAt: time.Now(),
+        }
+        orderToCreat.Status = models.NewStatus
+
+        o.orders[orderID] = orderToCreat
+
+        return orderID, nil</span>
+}
+
+func (o *Orders) SetStatus(_ context.Context, orderID int64, status models.OrderStatus) error <span class="cov10" title="18">{
+        o.mu.Lock()
+        defer o.mu.Unlock()
+
+        order, ok := o.orders[orderID]
+        if !ok </span><span class="cov0" title="0">{
+                return models.ErrOrderNotFound
+        }</span>
+
+        <span class="cov10" title="18">order.Status = status
+        o.orders[orderID] = order
+
+        return nil</span>
+}
+
+func (o *Orders) GetByOrderID(_ context.Context, orderID int64) (models.Order, error) <span class="cov9" title="17">{
+        o.mu.Lock()
+        defer o.mu.Unlock()
+
+        order, ok := o.orders[orderID]
+        if !ok </span><span class="cov4" title="3">{
+                return models.Order{}, models.ErrOrderNotFound
+        }</span>
+
+        <span class="cov9" title="14">return order.Order, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package stocksmem
+
+import (
+        "context"
+        _ "embed"
+        "encoding/json"
+        "sync"
+
+        "route256/loms/internal/loms/models"
+)
+
+//go:embed stock-data.json
+var stockData []byte
+
+type Stocks struct {
+        mu       *sync.RWMutex
+        stocks   map[uint32]int64 // Общее количество доступных для заказа товаров (skuID -&gt; amount). Количество уменьшается только после оплаты
+        reserved map[uint32]int64 // Зарезервированные товары (не оплаченные) (skuID -&gt; amount)
+}
+
+func New() (*Stocks, error) <span class="cov1" title="1">{
+        stocks := &amp;Stocks{
+                mu:       &amp;sync.RWMutex{},
+                stocks:   make(map[uint32]int64),
+                reserved: make(map[uint32]int64),
+        }
+
+        if err := stocks.uploadStockData(); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">return stocks, nil</span>
+}
+
+func (s *Stocks) Reserve(_ context.Context, order models.Order) error <span class="cov7" title="10">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        var err error
+        changesSnapshot := make(map[uint32]int64)
+
+        // для восстановления данных в исходное состояние в случае возникновения ошибки
+        defer func() </span><span class="cov7" title="10">{
+                if err != nil </span><span class="cov3" title="2">{
+                        for sku, amount := range changesSnapshot </span><span class="cov0" title="0">{
+                                s.reserved[sku] -= amount
+                        }</span>
+                }
+        }()
+
+        <span class="cov7" title="10">for _, item := range order.Items </span><span class="cov9" title="17">{
+                available, ok := s.stocks[item.SKUid]
+                if !ok </span><span class="cov1" title="1">{
+                        err = models.ErrItemNotFound
+                        return err
+                }</span>
+
+                <span class="cov9" title="16">toReserve := int64(item.Count)
+                if available &lt; s.reserved[item.SKUid]+toReserve </span><span class="cov1" title="1">{
+                        err = models.ErrInsufficientStock
+                        return err
+                }</span>
+
+                <span class="cov9" title="15">changesSnapshot[item.SKUid] += toReserve
+                s.reserved[item.SKUid] += toReserve</span>
+        }
+
+        <span class="cov7" title="8">return nil</span>
+}
+
+func (s *Stocks) ReserveRemove(_ context.Context, order models.Order) error <span class="cov1" title="1">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        var err error
+        changesSnapshot := make(map[uint32]int64)
+
+        // для восстановления данных в исходное состояние в случае возникновения ошибки
+        defer func() </span><span class="cov1" title="1">{
+                if err != nil </span><span class="cov0" title="0">{
+                        for sku, amount := range changesSnapshot </span><span class="cov0" title="0">{
+                                s.reserved[sku] += amount
+                                s.stocks[sku] += amount
+                        }</span>
+                }
+        }()
+
+        <span class="cov1" title="1">for _, item := range order.Items </span><span class="cov1" title="1">{
+                // не проверяем s.stocks так как согласованность s.reserved c s.stocks проверяется в Reserve()
+                reserved, ok := s.reserved[item.SKUid]
+                if !ok </span><span class="cov0" title="0">{
+                        err = models.ErrItemNotFound
+                        return err
+                }</span>
+
+                <span class="cov1" title="1">toRemove := int64(item.Count)
+                if reserved &lt; toRemove </span><span class="cov0" title="0">{
+                        err = models.ErrReservationConflict
+                        return err
+                }</span>
+
+                <span class="cov1" title="1">changesSnapshot[item.SKUid] += toRemove
+                s.reserved[item.SKUid] -= toRemove
+                s.stocks[item.SKUid] -= toRemove</span>
+        }
+
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (s *Stocks) ReserveCancel(_ context.Context, order models.Order) error <span class="cov6" title="7">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        var err error
+        changesSnapshot := make(map[uint32]int64)
+
+        // для восстановления данных в исходное состояние в случае возникновения ошибки
+        defer func() </span><span class="cov6" title="7">{
+                if err != nil </span><span class="cov0" title="0">{
+                        for sku, amount := range changesSnapshot </span><span class="cov0" title="0">{
+                                s.reserved[sku] += amount
+                        }</span>
+                }
+        }()
+
+        <span class="cov6" title="7">for _, item := range order.Items </span><span class="cov8" title="14">{
+                reserved, ok := s.reserved[item.SKUid]
+                if !ok </span><span class="cov0" title="0">{
+                        err = models.ErrItemNotFound
+                        return err
+                }</span>
+
+                <span class="cov8" title="14">toRemove := int64(item.Count)
+                if reserved &lt; toRemove </span><span class="cov0" title="0">{
+                        err = models.ErrReservationConflict
+                        return err
+                }</span>
+
+                <span class="cov8" title="14">changesSnapshot[item.SKUid] += toRemove
+                s.reserved[item.SKUid] -= toRemove</span>
+        }
+
+        <span class="cov6" title="7">return nil</span>
+}
+
+func (s *Stocks) GetBySKU(_ context.Context, skuID uint32) (int64, error) <span class="cov7" title="8">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        if _, ok := s.stocks[skuID]; !ok </span><span class="cov1" title="1">{
+                return 0, models.ErrItemNotFound
+        }</span>
+        // нет проверки на наличие в s.reserved так как нерелевантна (в любом случае получим zero value)
+        <span class="cov6" title="7">total := s.stocks[skuID] - s.reserved[skuID]
+
+        return total, nil</span>
+}
+
+// UploadStockData - добавляет данные из stock-data.json. Перезаписывает данные в случае их наличия
+func (s *Stocks) uploadStockData() error <span class="cov1" title="1">{
+        s.mu.Lock()
+        defer s.mu.Unlock()
+
+        type stockItem struct {
+                SKU        uint32 `json:"sku"`
+                TotalCount uint32 `json:"total_count"`
+                Reserved   uint32 `json:"reserved"`
+        }
+
+        var stockItems []stockItem
+
+        if err := json.Unmarshal(stockData, &amp;stockItems); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov1" title="1">for _, stock := range stockItems </span><span class="cov10" title="20">{
+                s.stocks[stock.SKU] += int64(stock.TotalCount)
+                s.reserved[stock.SKU] = int64(stock.Reserved)
+        }</span>
+
+        <span class="cov1" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package impl
+
+import (
+        "route256/loms/internal/loms/models"
+        lomsservicev1 "route256/loms/pkg/api/loms/v1"
+)
+
+func ItemToDomain(item *lomsservicev1.Item) models.Item <span class="cov10" title="25">{
+        return models.Item{
+                SKUid: item.Sku,
+                Count: item.Count,
+        }
+}</span>
+
+func ItemToProto(item models.Item) *lomsservicev1.Item <span class="cov7" title="9">{
+        return &amp;lomsservicev1.Item{
+                Sku:   item.SKUid,
+                Count: item.Count,
+        }
+}</span>
+
+func OrderToDomain(req *lomsservicev1.OrderCreateRequest) models.Order <span class="cov8" title="14">{
+        items := make([]models.Item, len(req.Items))
+        for i, item := range req.Items </span><span class="cov10" title="25">{
+                items[i] = ItemToDomain(item)
+        }</span>
+        <span class="cov8" title="14">return models.Order{
+                UserID: req.User,
+                Items:  items,
+                Status: models.UnknownStatus,
+        }</span>
+}
+
+func OrderToProto(order models.Order) *lomsservicev1.OrderInfoResponse <span class="cov5" title="5">{
+        items := make([]*lomsservicev1.Item, len(order.Items))
+        for i, item := range order.Items </span><span class="cov7" title="9">{
+                items[i] = ItemToProto(item)
+        }</span>
+        <span class="cov5" title="5">return &amp;lomsservicev1.OrderInfoResponse{
+                User:   order.UserID,
+                Items:  items,
+                Status: StatusToProto(order.Status),
+        }</span>
+}
+
+func StatusToProto(status models.OrderStatus) lomsservicev1.Status <span class="cov5" title="5">{
+        switch status </span>{
+        case models.NewStatus:<span class="cov0" title="0">
+                return lomsservicev1.Status_STATUS_NEW</span>
+        case models.AwaitingPaymentStatus:<span class="cov2" title="2">
+                return lomsservicev1.Status_STATUS_AWAITING_PAYMENT</span>
+        case models.PayedStatus:<span class="cov2" title="2">
+                return lomsservicev1.Status_STATUS_PAYED</span>
+        case models.CancelledStatus:<span class="cov1" title="1">
+                return lomsservicev1.Status_STATUS_CANCELLED</span>
+        case models.FailedStatus:<span class="cov0" title="0">
+                return lomsservicev1.Status_STATUS_FAILED</span>
+        default:<span class="cov0" title="0">
+                return lomsservicev1.Status_STATUS_UNKNOWN</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package impl
+
+import (
+        "errors"
+
+        "route256/loms/internal/loms/models"
+
+        "google.golang.org/grpc/codes"
+        "google.golang.org/grpc/status"
+)
+
+func mapError(err error) error <span class="cov10" title="21">{
+        switch </span>{
+        case errors.Is(err, models.ErrOrderNotFound):<span class="cov5" title="5">
+                return status.Error(codes.NotFound, err.Error())</span>
+        case errors.Is(err, models.ErrItemNotFound):<span class="cov5" title="4">
+                return status.Error(codes.NotFound, err.Error())</span>
+        case errors.Is(err, models.ErrInsufficientStock):<span class="cov3" title="2">
+                return status.Error(codes.FailedPrecondition, err.Error())</span>
+        case errors.Is(err, models.ErrReservationConflict):<span class="cov3" title="2">
+                return status.Error(codes.FailedPrecondition, err.Error())</span>
+        case errors.Is(err, models.ErrOrderStatusConflict):<span class="cov4" title="3">
+                return status.Error(codes.FailedPrecondition, err.Error())</span>
+        default:<span class="cov5" title="5">
+                return status.Error(codes.Internal, "internal server error")</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package impl
+
+import (
+        "context"
+
+        "route256/loms/internal/loms/models"
+        lomsservicev1 "route256/loms/pkg/api/loms/v1"
+
+        "github.com/rs/zerolog"
+        "google.golang.org/protobuf/types/known/emptypb"
+)
+
+//go:generate minimock -i lomsServer -p impl_test
+type lomsServer interface {
+        OrderCreate(ctx context.Context, order models.Order) (int64, error)
+        OrderInfo(ctx context.Context, orderID int64) (models.Order, error)
+        OrderPay(ctx context.Context, orderID int64) error
+        OrderCancel(ctx context.Context, orderID int64) error
+        StocksInfo(ctx context.Context, skuID uint32) (int64, error)
+}
+
+var _ lomsservicev1.LOMSServer = (*Impl)(nil)
+
+type Impl struct {
+        log    zerolog.Logger
+        server lomsServer
+        lomsservicev1.UnimplementedLOMSServer
+}
+
+func New(
+        log zerolog.Logger,
+        server lomsServer,
+) *Impl <span class="cov10" title="19">{
+        return &amp;Impl{
+                log:    log,
+                server: server,
+        }
+}</span>
+
+func (i *Impl) OrderCreate(ctx context.Context, req *lomsservicev1.OrderCreateRequest) (*lomsservicev1.OrderCreateResponse, error) <span class="cov9" title="14">{
+        orderID, err := i.server.OrderCreate(ctx, OrderToDomain(req))
+        if err != nil </span><span class="cov5" title="5">{
+                i.log.Error().Err(err).Send()
+                return nil, mapError(err)
+        }</span>
+
+        <span class="cov7" title="9">return &amp;lomsservicev1.OrderCreateResponse{OrderID: orderID}, nil</span>
+}
+
+func (i *Impl) OrderInfo(ctx context.Context, req *lomsservicev1.OrderInfoRequest) (*lomsservicev1.OrderInfoResponse, error) <span class="cov7" title="8">{
+        order, err := i.server.OrderInfo(ctx, req.OrderID)
+        if err != nil </span><span class="cov4" title="3">{
+                i.log.Error().Err(err).Send()
+                return nil, mapError(err)
+        }</span>
+
+        <span class="cov5" title="5">return OrderToProto(order), nil</span>
+}
+
+func (i *Impl) OrderPay(ctx context.Context, req *lomsservicev1.OrderPayRequest) (*emptypb.Empty, error) <span class="cov7" title="8">{
+        err := i.server.OrderPay(ctx, req.OrderID)
+        if err != nil </span><span class="cov6" title="6">{
+                i.log.Error().Err(err).Send()
+                return nil, mapError(err)
+        }</span>
+
+        <span class="cov3" title="2">return &amp;emptypb.Empty{}, nil</span>
+}
+func (i *Impl) OrderCancel(ctx context.Context, req *lomsservicev1.OrderCancelRequest) (*emptypb.Empty, error) <span class="cov8" title="12">{
+        err := i.server.OrderCancel(ctx, req.OrderID)
+        if err != nil </span><span class="cov5" title="4">{
+                i.log.Error().Err(err).Send()
+                return nil, mapError(err)
+        }</span>
+
+        <span class="cov7" title="8">return &amp;emptypb.Empty{}, nil</span>
+}
+func (i *Impl) StocksInfo(ctx context.Context, req *lomsservicev1.StocksInfoRequest) (*lomsservicev1.StocksInfoResponse, error) <span class="cov8" title="11">{
+        count, err := i.server.StocksInfo(ctx, req.Sku)
+        if err != nil </span><span class="cov4" title="3">{
+                i.log.Error().Err(err).Send()
+                return nil, mapError(err)
+        }</span>
+
+        <span class="cov7" title="8">return &amp;lomsservicev1.StocksInfoResponse{Count: uint64(count)}, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package interceptors
+
+import (
+        "context"
+        "time"
+
+        "github.com/rs/zerolog"
+        "google.golang.org/grpc"
+        "google.golang.org/grpc/codes"
+        "google.golang.org/grpc/status"
+        "google.golang.org/protobuf/encoding/protojson"
+        "google.golang.org/protobuf/proto"
+)
+
+func LoggingInterceptor(logger zerolog.Logger) grpc.UnaryServerInterceptor <span class="cov1" title="1">{
+        return func(
+                ctx context.Context,
+                req any,
+                info *grpc.UnaryServerInfo,
+                handler grpc.UnaryHandler,
+        ) (resp any, err error) </span><span class="cov10" title="36">{
+                logRequest(logger, req, info)
+
+                defer func(start time.Time) </span><span class="cov10" title="36">{
+                        if err != nil </span><span class="cov6" title="8">{
+                                logEvent := logger.With().
+                                        Str("method", info.FullMethod).
+                                        Dur("duration", time.Since(start)).Logger()
+
+                                st, _ := status.FromError(err)
+
+                                switch st.Code() </span>{
+                                case codes.NotFound, codes.InvalidArgument, codes.FailedPrecondition:<span class="cov6" title="8">
+                                        logEvent.Warn().Err(err).Send()</span>
+                                case codes.Internal:<span class="cov0" title="0">
+                                        logEvent.Error().Err(err).Send()</span>
+                                default:<span class="cov0" title="0">
+                                        logEvent.Error().Err(err).Send()</span>
+                                }
+
+                                <span class="cov6" title="8">return</span>
+                        }
+
+                        <span class="cov9" title="28">logResponse(logger, time.Since(start), resp, info)</span>
+                }(time.Now())
+
+                <span class="cov10" title="36">return handler(logger.WithContext(ctx), req)</span>
+        }
+}
+
+func logRequest(logger zerolog.Logger, req any, info *grpc.UnaryServerInfo) <span class="cov10" title="36">{
+        reqProto, ok := req.(proto.Message)
+        if !ok </span><span class="cov0" title="0">{
+                logger.Warn().Msg("failed to cast request to proto.Message")
+        }</span>
+
+        <span class="cov10" title="36">reqBytes, err := protojson.Marshal(reqProto)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Warn().Err(err).Msg("failed to marshal request")
+        }</span>
+
+        <span class="cov10" title="36">logger.Debug().
+                Str("method", info.FullMethod).
+                Bytes("request body", reqBytes).
+                Send()</span>
+}
+
+func logResponse(logger zerolog.Logger, timeTaken time.Duration, resp any, info *grpc.UnaryServerInfo) <span class="cov9" title="28">{
+        respProto, ok := resp.(proto.Message)
+        if !ok </span><span class="cov0" title="0">{
+                logger.Warn().Msg("failed to cast response to proto.Message")
+        }</span>
+
+        <span class="cov9" title="28">respBytes, err := protojson.Marshal(respProto)
+        if err != nil </span><span class="cov0" title="0">{
+                logger.Warn().Err(err).Msg("failed to marshal response")
+        }</span>
+
+        <span class="cov9" title="28">logger.Debug().
+                Str("method", info.FullMethod).
+                Dur("duration", timeTaken).
+                Bytes("response", respBytes).
+                Msg("received unary request")</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package interceptors
+
+import (
+        "context"
+        "runtime/debug"
+
+        "github.com/rs/zerolog"
+        "google.golang.org/grpc"
+        "google.golang.org/grpc/codes"
+        "google.golang.org/grpc/status"
+)
+
+func RecoverPanic(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) <span class="cov10" title="36">{
+        logger := *zerolog.Ctx(ctx)
+
+        defer func() </span><span class="cov10" title="36">{
+                if rec := recover(); rec != nil </span><span class="cov0" title="0">{
+                        logger.Error().Any("panic", rec).Bytes("stack", debug.Stack()).Send()
+                        err = status.Errorf(codes.Internal, "panic: %v", rec)
+                }</span>
+        }()
+
+        <span class="cov10" title="36">return handler(ctx, req)</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package interceptors
+
+import (
+        "context"
+
+        "google.golang.org/grpc"
+        "google.golang.org/grpc/codes"
+        "google.golang.org/grpc/status"
+)
+
+type validator interface {
+        Validate() error
+}
+
+func Validate(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) <span class="cov10" title="36">{
+        if v, ok := req.(validator); ok </span><span class="cov9" title="35">{
+                if err := v.Validate(); err != nil </span><span class="cov0" title="0">{
+                        return nil, status.Error(codes.InvalidArgument, err.Error())
+                }</span>
+        }
+        <span class="cov10" title="36">return handler(ctx, req)</span>
+}
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package ggrpc
+
+import (
+        "route256/loms/config"
+        "route256/loms/internal/loms/ports/ggrpc/impl"
+        "route256/loms/internal/loms/ports/ggrpc/interceptors"
+        "route256/loms/internal/loms/resources"
+        lomsservicev1 "route256/loms/pkg/api/loms/v1"
+
+        "github.com/rs/zerolog"
+        "google.golang.org/grpc"
+        "google.golang.org/grpc/health"
+        "google.golang.org/grpc/health/grpc_health_v1"
+        "google.golang.org/grpc/reflection"
+)
+
+func NewServer(_ config.Config, res resources.Resources) *grpc.Server <span class="cov8" title="1">{
+        options := buildOptions(res.Log)
+
+        server := grpc.NewServer(options...)
+        reflection.Register(server)
+
+        serverAdapter := impl.New(res.Log, res.UseCase)
+
+        lomsservicev1.RegisterLOMSServer(server, serverAdapter)
+        grpc_health_v1.RegisterHealthServer(server, health.NewServer())
+
+        return server
+}</span>
+
+func buildOptions(log zerolog.Logger) []grpc.ServerOption <span class="cov8" title="1">{
+        return []grpc.ServerOption{
+                grpc.ChainUnaryInterceptor(
+                        interceptors.LoggingInterceptor(log),
+                        interceptors.RecoverPanic,
+                        interceptors.Validate,
+                ),
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package httpgate
+
+import (
+        "context"
+        "encoding/json"
+        "net/http"
+
+        "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+        "github.com/rs/zerolog/log"
+        "google.golang.org/grpc/codes"
+        "google.golang.org/grpc/status"
+)
+
+type errResp struct {
+        Error string `json:"error"`
+}
+
+func errHandler(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) <span class="cov0" title="0">{
+        s, ok := status.FromError(err)
+        if !ok </span><span class="cov0" title="0">{
+                runtime.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
+                return
+        }</span>
+
+        <span class="cov0" title="0">switch s.Code() </span>{
+        case codes.InvalidArgument:<span class="cov0" title="0">
+                customErr(w, http.StatusBadRequest, s.Message())</span>
+        case codes.NotFound:<span class="cov0" title="0">
+                customErr(w, http.StatusNotFound, s.Message())</span>
+        case codes.FailedPrecondition:<span class="cov0" title="0">
+                customErr(w, http.StatusPreconditionFailed, s.Message())</span>
+        case codes.Internal:<span class="cov0" title="0">
+                customErr(w, http.StatusInternalServerError, s.Message())</span>
+        default:<span class="cov0" title="0">
+                runtime.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)</span>
+        }
+
+}
+
+func customErr(w http.ResponseWriter, code int, msg string) <span class="cov0" title="0">{
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(code)
+
+        errMsg := errResp{
+                Error: msg,
+        }
+        if err := json.NewEncoder(w).Encode(errMsg); err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Send()
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package httpgate
+
+import (
+        "context"
+        "net/http"
+
+        "route256/loms/config"
+        lomsservicev1 "route256/loms/pkg/api/loms/v1"
+
+        "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+        "google.golang.org/grpc"
+        "google.golang.org/grpc/credentials/insecure"
+)
+
+func New(ctx context.Context, cfg config.HTTPGateCfg) (*http.Server, error) <span class="cov8" title="1">{
+        rmux := runtime.NewServeMux(runtime.WithErrorHandler(errHandler))
+
+        conn, err := grpc.NewClient(cfg.LOMSAddress,
+                grpc.WithTransportCredentials(insecure.NewCredentials()))
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">client := lomsservicev1.NewLOMSClient(conn)
+
+        if err = lomsservicev1.RegisterLOMSHandlerClient(ctx, rmux, client); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">mux := http.NewServeMux()
+        mux.Handle("/", rmux)
+
+        mux.HandleFunc("/swagger-ui/swagger.json", func(w http.ResponseWriter, r *http.Request) </span><span class="cov0" title="0">{
+                http.ServeFile(w, r, cfg.SwaggerFilePath)
+        }</span>)
+
+        // mount the Swagger UI that uses the OpenAPI specification path above
+        <span class="cov8" title="1">mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui/", http.FileServer(http.Dir(cfg.SwaggerDirPath))))
+
+        return &amp;http.Server{
+                Addr:    cfg.Address,
+                Handler: mux,
+        }, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file11" style="display: none">package resources
+
+import (
+        "route256/loms/config"
+        "route256/loms/internal/loms/adapters/ordersmem"
+        "route256/loms/internal/loms/adapters/stocksmem"
+        "route256/loms/internal/loms/usecase"
+
+        "route256/loms/pkg/logger"
+
+        "github.com/rs/zerolog"
+)
+
+type Resources struct {
+        Log           zerolog.Logger
+        UseCase       *usecase.UseCase
+        stopResources []func() error
+}
+
+func New(cfg config.Config) (Resources, error) <span class="cov8" title="1">{
+        log, err := logger.New(cfg.LoggerLVL)
+        if err != nil </span><span class="cov0" title="0">{
+                return Resources{}, err
+        }</span>
+
+        <span class="cov8" title="1">stockStorage, err := stocksmem.New()
+        if err != nil </span><span class="cov0" title="0">{
+                return Resources{}, err
+        }</span>
+
+        <span class="cov8" title="1">orderStorage := ordersmem.New()
+
+        return Resources{
+                Log: log,
+                UseCase: usecase.New(
+                        log,
+                        orderStorage,
+                        stockStorage,
+                ),
+                stopResources: []func() error{},
+        }, nil</span>
+}
+
+func (r Resources) Stop() <span class="cov8" title="1">{
+        for _, stop := range r.stopResources </span><span class="cov0" title="0">{
+                if err := stop(); err != nil </span><span class="cov0" title="0">{
+                        r.Log.Error().Err(err).Send()
+                }</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package loms
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "net"
+        "net/http"
+        "os/signal"
+        "syscall"
+        "time"
+
+        "route256/loms/config"
+        "route256/loms/internal/loms/ports/ggrpc"
+        "route256/loms/internal/loms/ports/httpgate"
+        "route256/loms/internal/loms/resources"
+
+        "github.com/rs/zerolog/log"
+        "golang.org/x/sync/errgroup"
+)
+
+const gracefulTimeout = 10 * time.Second
+
+func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title="1">{
+        ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+        defer cancel()
+
+        grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.Port))
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">res, err := resources.New(cfg)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">defer res.Stop()
+
+        g, gCtx := errgroup.WithContext(ctx)
+
+        grpcServer := ggrpc.NewServer(cfg, res)
+        gatewayServer, err := httpgate.New(gCtx, cfg.Gateway)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="1">g.Go(func() error </span><span class="cov8" title="1">{
+                log.Info().Msg(fmt.Sprintf("starting server: %s", cfg.Port))
+                return grpcServer.Serve(grpcListener)
+        }</span>)
+        <span class="cov8" title="1">g.Go(func() error </span><span class="cov8" title="1">{
+                log.Info().Msg(fmt.Sprintf("starting gateway: %s", cfg.Gateway.Address))
+                if err = gatewayServer.ListenAndServe(); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov8" title="1">return nil</span>
+        })
+        <span class="cov8" title="1">g.Go(func() error </span><span class="cov8" title="1">{
+                &lt;-gCtx.Done()
+                log.Info().Msg("Got interruption signal")
+                shutDownCtx, cancel := context.WithTimeout(context.Background(), gracefulTimeout)
+                defer cancel()
+                grpcServer.GracefulStop()
+                return gatewayServer.Shutdown(shutDownCtx)
+        }</span>)
+
+        <span class="cov8" title="1">if err = g.Wait(); err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Send()
+                return err
+        }</span>
+
+        <span class="cov8" title="1">log.Info().Msg("server was gracefully shut down")
+        return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package usecase
+
+import (
+        "context"
+
+        "route256/loms/internal/loms/models"
+
+        "github.com/rs/zerolog"
+)
+
+//go:generate minimock -i stockProvider -p usecase_test
+type stockProvider interface {
+        Reserve(ctx context.Context, order models.Order) error
+        ReserveRemove(ctx context.Context, order models.Order) error
+        ReserveCancel(ctx context.Context, order models.Order) error
+        GetBySKU(ctx context.Context, skuID uint32) (int64, error)
+}
+
+//go:generate minimock -i orderManager -p usecase_test
+type orderManager interface {
+        Create(ctx context.Context, order models.Order) (int64, error)
+        SetStatus(ctx context.Context, orderID int64, status models.OrderStatus) error
+        GetByOrderID(ctx context.Context, orderID int64) (models.Order, error)
+}
+
+type UseCase struct {
+        log    zerolog.Logger
+        stocks stockProvider
+        orders orderManager
+}
+
+func New(
+        log zerolog.Logger,
+        orders orderManager,
+        stocks stockProvider,
+) *UseCase <span class="cov10" title="20">{
+        return &amp;UseCase{
+                log:    log,
+                orders: orders,
+                stocks: stocks,
+        }
+}</span>
+
+func (uc *UseCase) OrderCreate(ctx context.Context, order models.Order) (int64, error) <span class="cov9" title="15">{
+        var err error
+
+        orderID, err := uc.orders.Create(ctx, order)
+        if err != nil </span><span class="cov3" title="2">{
+                return 0, err
+        }</span>
+
+        <span class="cov8" title="13">defer func() </span><span class="cov8" title="13">{
+                if err != nil </span><span class="cov4" title="3">{
+                        uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation failed")
+                        err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
+                        if err != nil </span><span class="cov1" title="1">{
+                                uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
+                        }</span>
+                } else<span class="cov7" title="10"> {
+                        uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation success")
+                        err = uc.orders.SetStatus(ctx, orderID, models.AwaitingPaymentStatus)
+                        if err != nil </span><span class="cov1" title="1">{
+                                uc.log.Error().Err(err).Str("set fail", "AWAITING_PAYMENT").Int64("orderID", orderID).Send()
+                        }</span>
+                }
+        }()
+
+        <span class="cov8" title="13">if err = uc.stocks.Reserve(ctx, order); err != nil </span><span class="cov4" title="3">{
+                return 0, err
+        }</span>
+
+        <span class="cov7" title="10">return orderID, nil</span>
+}
+func (uc *UseCase) OrderInfo(ctx context.Context, orderID int64) (models.Order, error) <span class="cov6" title="7">{
+        order, err := uc.orders.GetByOrderID(ctx, orderID)
+        if err != nil </span><span class="cov3" title="2">{
+                return models.Order{}, err
+        }</span>
+
+        <span class="cov5" title="5">return order, nil</span>
+}
+func (uc *UseCase) OrderPay(ctx context.Context, orderID int64) error <span class="cov7" title="8">{
+        order, err := uc.orders.GetByOrderID(ctx, orderID)
+        if err != nil </span><span class="cov3" title="2">{
+                return err
+        }</span>
+
+        <span class="cov6" title="6">if order.Status != models.AwaitingPaymentStatus </span><span class="cov3" title="2">{
+                return models.ErrOrderStatusConflict
+        }</span>
+
+        <span class="cov5" title="4">defer func() </span><span class="cov5" title="4">{
+                if err != nil </span><span class="cov1" title="1">{
+                        uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation removal failed")
+                        err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
+                        if err != nil </span><span class="cov1" title="1">{
+                                uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
+                        }</span>
+                } else<span class="cov4" title="3"> {
+                        uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation removal success")
+                        err = uc.orders.SetStatus(ctx, orderID, models.PayedStatus)
+                        if err != nil </span><span class="cov1" title="1">{
+                                uc.log.Error().Err(err).Str("set fail", "PAYED").Int64("orderID", orderID).Send()
+                        }</span>
+                }
+        }()
+
+        // Нужно записать результата в err что бы его можно было обработать в defer
+        <span class="cov5" title="4">err = uc.stocks.ReserveRemove(ctx, order)
+        return err</span>
+}
+func (uc *UseCase) OrderCancel(ctx context.Context, orderID int64) error <span class="cov8" title="14">{
+        order, err := uc.orders.GetByOrderID(ctx, orderID)
+        if err != nil </span><span class="cov3" title="2">{
+                return err
+        }</span>
+
+        // Оставим возможность отмены заказа только со статусом new и awaiting_payment
+        <span class="cov8" title="12">if order.Status != models.AwaitingPaymentStatus &amp;&amp; order.Status != models.NewStatus </span><span class="cov3" title="2">{
+                return models.ErrOrderStatusConflict
+        }</span>
+
+        <span class="cov7" title="10">defer func() </span><span class="cov7" title="10">{
+                if err != nil </span><span class="cov1" title="1">{
+                        uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation cancellation failed")
+                        err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
+                        if err != nil </span><span class="cov1" title="1">{
+                                uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
+                        }</span>
+                } else<span class="cov7" title="9"> {
+                        uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation cancellation success")
+                        err = uc.orders.SetStatus(ctx, orderID, models.CancelledStatus)
+                        if err != nil </span><span class="cov1" title="1">{
+                                uc.log.Error().Err(err).Str("set fail", "CANCELLED").Int64("orderID", orderID).Send()
+                        }</span>
+                }
+        }()
+
+        // Нужно записать результата в err что бы его можно было обработать в defer
+        <span class="cov7" title="10">err = uc.stocks.ReserveCancel(ctx, order)
+        return err</span>
+}
+func (uc *UseCase) StocksInfo(ctx context.Context, skuID uint32) (int64, error) <span class="cov7" title="10">{
+        amount, err := uc.stocks.GetBySKU(ctx, skuID)
+        if err != nil </span><span class="cov3" title="2">{
+                return 0, err
+        }</span>
+
+        <span class="cov7" title="8">return amount, nil</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

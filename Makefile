@@ -1,10 +1,22 @@
 build-all:
-	cd cart && GOOS=linux GOARCH=amd64 make build
+	cd cart && make build
+	cd loms && make build
 
-
-run-all: build-all
-	docker-compose up --force-recreate --build -d
+run-all:
+	docker compose up --force-recreate --build -d
 
 down:
-	docker-compose down
+	docker compose down
 
+up-cart-env:
+	docker compose up -d --wait loms
+
+
+.PHONY: cart-integration-test
+cart-integration-test: up-cart-env
+	cd cart && make integration-test
+	docker compose down
+
+.PHONY: loms-integration-test
+loms-integration-test:
+	cd loms && make integration-test

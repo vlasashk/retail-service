@@ -12,3 +12,5 @@
 /cart/vendor.protogen/
 /loms/pgdata
 bin/
+vendor-proto/
+pkg/api/

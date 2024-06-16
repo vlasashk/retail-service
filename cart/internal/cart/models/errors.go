@@ -5,9 +5,14 @@ import (
 )
 
 var (
-	ErrNotFound       = errors.New("not found")
-	ErrItemNotFound   = errors.New("item not found")
+	ErrNotFound = errors.New("not found")
+
+	ErrInsufficientStock = errors.New("insufficient stock")
+	ErrStockProvider     = errors.New("failed to request stock info")
+
+	ErrBadProductInfo = errors.New("bad product info")
 	ErrItemProvider   = errors.New("failed to request item info")
+
 	ErrAddItem        = errors.New("failed to add item")
 	ErrCartIsEmpty    = errors.New("cart is empty or doesn't exist")
 	ErrCartCheckout   = errors.New("failed to checkout cart")
@@ -20,5 +25,4 @@ var (
 	ErrRemoveItem     = errors.New("failed to remove item")
 	ErrRemoveCart     = errors.New("failed to remove cart")
 	ErrInternalError  = errors.New("internal server error")
-	ErrBadProductInfo = errors.New("bad product info")
 )

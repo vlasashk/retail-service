@@ -48,7 +48,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, models.ErrCartIsEmpty):
 			errhandle.NewErr(models.ErrCartIsEmpty.Error()).Send(w, localLog, http.StatusNotFound)
 		case errors.Is(err, models.ErrNotFound):
-			errhandle.NewErr(models.ErrItemNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)
+			errhandle.NewErr(models.ErrNotFound.Error()).Send(w, localLog, http.StatusPreconditionFailed)
 		default:
 			errhandle.NewErr(models.ErrCartCheckout.Error()).Send(w, localLog, http.StatusInternalServerError)
 		}

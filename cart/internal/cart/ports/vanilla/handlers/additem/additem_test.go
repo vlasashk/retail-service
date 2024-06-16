@@ -122,7 +122,7 @@ func TestAddItemHandler(t *testing.T) {
 			userID:     42,
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
-			expectResp: `{"error":"item not found"}`,
+			expectResp: `{"error":"not found"}`,
 		},
 		{
 			name:       "AddItemAdderErr",
@@ -136,7 +136,7 @@ func TestAddItemHandler(t *testing.T) {
 			expectResp: `{"error":"failed to add item"}`,
 		},
 		{
-			name:       "AddItemProviderErr",
+			name:       "AddItemProductProviderErr",
 			expectCode: http.StatusInternalServerError,
 			mockSetUp: func(m *mocksToUse, userID int64) {
 				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(models.ErrItemProvider)
@@ -145,6 +145,28 @@ func TestAddItemHandler(t *testing.T) {
 			skuID:      1000,
 			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
 			expectResp: `{"error":"failed to request item info"}`,
+		},
+		{
+			name:       "AddItemStockProviderErr",
+			expectCode: http.StatusInternalServerError,
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(models.ErrStockProvider)
+			},
+			userID:     1,
+			skuID:      1000,
+			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
+			expectResp: `{"error":"failed to request stock info"}`,
+		},
+		{
+			name:       "AddItemInsufficientStock",
+			expectCode: http.StatusPreconditionFailed,
+			mockSetUp: func(m *mocksToUse, userID int64) {
+				m.Adder.AddItemMock.When(minimock.AnyContext, userID, testItem.SkuID, testItem.Count).Then(models.ErrInsufficientStock)
+			},
+			userID:     1,
+			skuID:      1000,
+			body:       bytes.NewBuffer([]byte(`{"count":5}`)),
+			expectResp: `{"error":"insufficient stock"}`,
 		},
 		{
 			name:       "AddItemReaderErr",
