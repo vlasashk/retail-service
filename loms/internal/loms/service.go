@@ -29,7 +29,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 	if err != nil {
 		return err
 	}
-	res, err := resources.New(cfg)
+	res, err := resources.New(ctx, cfg)
 	if err != nil {
 		return err
 	}

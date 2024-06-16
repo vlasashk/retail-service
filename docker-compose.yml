@@ -28,6 +28,9 @@ services:
       dockerfile: ./loms/cmd/loms/Dockerfile
     env_file:
       - ./loms/config/docker.env
+    environment:
+      - ORDERS_DB_PASSWORD=$(POSTGRES_PASSWORD)
+      - STOCKS_DB_PASSWORD=$(POSTGRES_PASSWORD)
     ports:
       - "50000:50000" #gRPC service
       - "8888:8888" #gRPC gateway
@@ -39,9 +42,34 @@ services:
       retries: 3
       start_period: 30s
       start_interval: 3s
+    depends_on:
+      loms_db:
+        condition: service_healthy
     networks:
       - backend
-
+  loms_db:
+    container_name: loms_db
+    image: postgres:latest
+    user: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=$(POSTGRES_PASSWORD)
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    volumes:
+      - loms_data:/var/lib/postgresql/loms_data
+    networks:
+      - backend
+        
+volumes:
+  loms_data:
+    
 networks:
   backend:
     driver: bridge
