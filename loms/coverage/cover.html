@@ -55,33 +55,39 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">route256/loms/internal/loms/adapters/ordersmem/orders.go (91.7%)</option>
+				<option value="file0">route256/loms/internal/loms/adapters/ordersmem/orders.go (0.0%)</option>
 				
-				<option value="file1">route256/loms/internal/loms/adapters/stocksmem/stocks.go (80.5%)</option>
+				<option value="file1">route256/loms/internal/loms/adapters/pgorders/dto.go (83.3%)</option>
 				
-				<option value="file2">route256/loms/internal/loms/ports/ggrpc/impl/dto.go (82.4%)</option>
+				<option value="file2">route256/loms/internal/loms/adapters/pgorders/repo.go (77.4%)</option>
 				
-				<option value="file3">route256/loms/internal/loms/ports/ggrpc/impl/errors.go (100.0%)</option>
+				<option value="file3">route256/loms/internal/loms/adapters/pgstocks/repo.go (71.3%)</option>
 				
-				<option value="file4">route256/loms/internal/loms/ports/ggrpc/impl/impl.go (100.0%)</option>
+				<option value="file4">route256/loms/internal/loms/adapters/stocksmem/stocks.go (0.0%)</option>
 				
-				<option value="file5">route256/loms/internal/loms/ports/ggrpc/interceptors/logger.go (77.8%)</option>
+				<option value="file5">route256/loms/internal/loms/ports/ggrpc/impl/dto.go (82.4%)</option>
 				
-				<option value="file6">route256/loms/internal/loms/ports/ggrpc/interceptors/recover.go (66.7%)</option>
+				<option value="file6">route256/loms/internal/loms/ports/ggrpc/impl/errors.go (100.0%)</option>
 				
-				<option value="file7">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
+				<option value="file7">route256/loms/internal/loms/ports/ggrpc/impl/impl.go (100.0%)</option>
 				
-				<option value="file8">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
+				<option value="file8">route256/loms/internal/loms/ports/ggrpc/interceptors/logger.go (77.8%)</option>
 				
-				<option value="file9">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
+				<option value="file9">route256/loms/internal/loms/ports/ggrpc/interceptors/recover.go (66.7%)</option>
 				
-				<option value="file10">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
+				<option value="file10">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
 				
-				<option value="file11">route256/loms/internal/loms/resources/resources.go (63.6%)</option>
+				<option value="file11">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
 				
-				<option value="file12">route256/loms/internal/loms/service.go (82.4%)</option>
+				<option value="file12">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
 				
-				<option value="file13">route256/loms/internal/loms/usecase/usecase.go (100.0%)</option>
+				<option value="file13">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
+				
+				<option value="file14">route256/loms/internal/loms/resources/resources.go (69.2%)</option>
+				
+				<option value="file15">route256/loms/internal/loms/service.go (82.4%)</option>
+				
+				<option value="file16">route256/loms/internal/loms/usecase/usecase.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -125,14 +131,14 @@ type Orders struct {
         orders map[int64]userOrder
 }
 
-func New() *Orders <span class="cov1" title="1">{
+func New() *Orders <span class="cov0" title="0">{
         return &amp;Orders{
                 mu:     sync.RWMutex{},
                 orders: make(map[int64]userOrder),
         }
 }</span>
 
-func (o *Orders) Create(_ context.Context, order models.Order) (int64, error) <span class="cov8" title="10">{
+func (o *Orders) Create(_ context.Context, order models.Order) (int64, error) <span class="cov0" title="0">{
         o.mu.Lock()
         defer o.mu.Unlock()
 
@@ -142,7 +148,7 @@ func (o *Orders) Create(_ context.Context, order models.Order) (int64, error) <s
                 orderID = rand.Int64()
         }</span>
 
-        <span class="cov8" title="10">orderToCreat := userOrder{
+        <span class="cov0" title="0">orderToCreat := userOrder{
                 Order:     order,
                 createdAt: time.Now(),
         }
@@ -153,7 +159,7 @@ func (o *Orders) Create(_ context.Context, order models.Order) (int64, error) <s
         return orderID, nil</span>
 }
 
-func (o *Orders) SetStatus(_ context.Context, orderID int64, status models.OrderStatus) error <span class="cov10" title="18">{
+func (o *Orders) SetStatus(_ context.Context, orderID int64, status models.OrderStatus) error <span class="cov0" title="0">{
         o.mu.Lock()
         defer o.mu.Unlock()
 
@@ -162,26 +168,478 @@ func (o *Orders) SetStatus(_ context.Context, orderID int64, status models.Order
                 return models.ErrOrderNotFound
         }</span>
 
-        <span class="cov10" title="18">order.Status = status
+        <span class="cov0" title="0">order.Status = status
         o.orders[orderID] = order
 
         return nil</span>
 }
 
-func (o *Orders) GetByOrderID(_ context.Context, orderID int64) (models.Order, error) <span class="cov9" title="17">{
+func (o *Orders) GetByOrderID(_ context.Context, orderID int64) (models.Order, error) <span class="cov0" title="0">{
         o.mu.Lock()
         defer o.mu.Unlock()
 
         order, ok := o.orders[orderID]
-        if !ok </span><span class="cov4" title="3">{
+        if !ok </span><span class="cov0" title="0">{
                 return models.Order{}, models.ErrOrderNotFound
         }</span>
 
-        <span class="cov9" title="14">return order.Order, nil</span>
+        <span class="cov0" title="0">return order.Order, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file1" style="display: none">package stocksmem
+		<pre class="file" id="file1" style="display: none">package pgorders
+
+import (
+        "time"
+
+        "route256/loms/internal/loms/models"
+)
+
+const (
+        unknownStatus         string = "Unknown"
+        newStatus             string = "New"
+        awaitingPaymentStatus string = "AwaitingPayment"
+        payedStatus           string = "Payed"
+        cancelledStatus       string = "Cancelled"
+        failedStatus          string = "Failed"
+)
+
+type orderDTO struct {
+        ID        int64     `db:"id"`
+        UserID    int64     `db:"user_id"`
+        Status    string    `db:"status"`
+        CreatedAt time.Time `db:"-"`
+        UpdatedAt time.Time `db:"-"`
+}
+
+type itemDTO struct {
+        SKU       uint32    `db:"sku_id"`
+        OrderID   int64     `db:"order_id"`
+        Count     uint32    `db:"count"`
+        CreatedAt time.Time `db:"-"`
+        UpdatedAt time.Time `db:"-"`
+}
+
+func statusToDTO(status models.OrderStatus) string <span class="cov8" title="11">{
+        switch status </span>{
+        case models.NewStatus:<span class="cov5" title="4">
+                return newStatus</span>
+        case models.AwaitingPaymentStatus:<span class="cov3" title="2">
+                return awaitingPaymentStatus</span>
+        case models.PayedStatus:<span class="cov1" title="1">
+                return payedStatus</span>
+        case models.CancelledStatus:<span class="cov3" title="2">
+                return cancelledStatus</span>
+        case models.FailedStatus:<span class="cov3" title="2">
+                return failedStatus</span>
+        default:<span class="cov0" title="0">
+                return unknownStatus</span>
+        }
+}
+
+func statusToDomain(status string) models.OrderStatus <span class="cov8" title="9">{
+        switch status </span>{
+        case newStatus:<span class="cov0" title="0">
+                return models.NewStatus</span>
+        case awaitingPaymentStatus:<span class="cov6" title="5">
+                return models.AwaitingPaymentStatus</span>
+        case payedStatus:<span class="cov3" title="2">
+                return models.PayedStatus</span>
+        case cancelledStatus:<span class="cov3" title="2">
+                return models.CancelledStatus</span>
+        case failedStatus:<span class="cov0" title="0">
+                return models.FailedStatus</span>
+        default:<span class="cov0" title="0">
+                return models.UnknownStatus</span>
+        }
+}
+
+func orderToDTO(order models.Order) orderDTO <span class="cov5" title="4">{
+        return orderDTO{
+                UserID:    order.UserID,
+                Status:    statusToDTO(order.Status),
+                CreatedAt: time.Now(),
+                UpdatedAt: time.Now(),
+        }
+}</span>
+
+func orderToDomain(order orderDTO, items []itemDTO) models.Order <span class="cov8" title="9">{
+        return models.Order{
+                UserID: order.UserID,
+                Items:  itemsToDomain(items),
+                Status: statusToDomain(order.Status),
+        }
+}</span>
+
+func itemsToDTO(orderID int64, items []models.Item) []itemDTO <span class="cov5" title="4">{
+        itemsDTO := make([]itemDTO, 0, len(items))
+
+        for _, item := range items </span><span class="cov6" title="5">{
+                itemsDTO = append(itemsDTO, itemDTO{
+                        SKU:       item.SKUid,
+                        OrderID:   orderID,
+                        Count:     item.Count,
+                        CreatedAt: time.Now(),
+                        UpdatedAt: time.Now(),
+                })
+        }</span>
+
+        <span class="cov5" title="4">return itemsDTO</span>
+}
+
+func itemsToDomain(itemsDTO []itemDTO) []models.Item <span class="cov8" title="9">{
+        items := make([]models.Item, 0, len(itemsDTO))
+
+        for _, item := range itemsDTO </span><span class="cov10" title="15">{
+                items = append(items, models.Item{
+                        SKUid: item.SKU,
+                        Count: item.Count,
+                })
+        }</span>
+
+        <span class="cov8" title="9">return items</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package pgorders
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "time"
+
+        "route256/loms/config"
+        "route256/loms/internal/loms/models"
+        "route256/loms/pkg/pgconnect"
+
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgxpool"
+        "github.com/rs/zerolog"
+        "github.com/rs/zerolog/log"
+)
+
+type OrdersRepo struct {
+        Pool *pgxpool.Pool
+}
+
+func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (*OrdersRepo, error) <span class="cov1" title="1">{
+        url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+                cfg.User,
+                cfg.Password,
+                cfg.Host,
+                cfg.Port,
+                cfg.Name)
+
+        pool, err := pgconnect.Connect(ctx, url, logger)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">return &amp;OrdersRepo{Pool: pool}, nil</span>
+}
+
+func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, error) <span class="cov6" title="4">{
+        qry := `INSERT INTO orders.orders (user_id, status, created_at, updated_at)
+                                VALUES ($1, $2, $3, $4)
+                                RETURNING id;`
+        var orderID int64
+
+        orderData := orderToDTO(order)
+
+        tx, err := or.Pool.Begin(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("connection acquire fail: %w", err)
+        }</span>
+        <span class="cov6" title="4">defer func() </span><span class="cov6" title="4">{
+                if err = tx.Rollback(ctx); err != nil </span><span class="cov6" title="4">{
+                        if !errors.Is(err, pgx.ErrTxClosed) </span><span class="cov0" title="0">{
+                                log.Error().Err(err).Caller().Send()
+                        }</span>
+                }
+        }()
+
+        <span class="cov6" title="4">if err = tx.QueryRow(ctx, qry, orderData.UserID, orderData.Status, orderData.CreatedAt, orderData.UpdatedAt).Scan(&amp;orderID); err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("query fail: %w", err)
+        }</span>
+
+        <span class="cov6" title="4">itemsData := itemsToDTO(orderID, order.Items)
+
+        _, err = tx.CopyFrom(ctx, pgx.Identifier{"orders", "order_items"}, []string{"sku_id", "order_id", "count", "created_at", "updated_at"},
+                pgx.CopyFromSlice(len(itemsData), func(i int) ([]any, error) </span><span class="cov6" title="5">{
+                        return []any{itemsData[i].SKU, itemsData[i].OrderID, itemsData[i].Count, itemsData[i].CreatedAt, itemsData[i].UpdatedAt}, nil
+                }</span>))
+        <span class="cov6" title="4">if err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("query fail: %w", err)
+        }</span>
+
+        <span class="cov6" title="4">if err = tx.Commit(ctx); err != nil </span><span class="cov0" title="0">{
+                return 0, fmt.Errorf("transaction commit fail: %w", err)
+        }</span>
+
+        <span class="cov6" title="4">return orderID, nil</span>
+}
+
+func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status models.OrderStatus) error <span class="cov8" title="7">{
+        qry := `UPDATE orders.orders
+                                SET status=$1, updated_at=$2
+                                WHERE id=$3`
+
+        tag, err := or.Pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov8" title="7">if tag.RowsAffected() == 0 </span><span class="cov0" title="0">{
+                return models.ErrOrderNotFound
+        }</span>
+
+        <span class="cov8" title="7">return nil</span>
+}
+
+func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) <span class="cov10" title="12">{
+        orderQry := `SELECT id, user_id, status
+                                        FROM orders.orders
+                                        WHERE id=$1`
+        itemsQry := `SELECT sku_id, order_id, count
+                                        FROM orders.order_items
+                                        WHERE order_id=$1`
+
+        orderRows, err := or.Pool.Query(ctx, orderQry, orderID)
+        if err != nil </span><span class="cov0" title="0">{
+                return models.Order{}, err
+        }</span>
+        <span class="cov10" title="12">defer orderRows.Close()
+
+        oderData, err := pgx.CollectOneRow(orderRows, pgx.RowToStructByName[orderDTO])
+        if err != nil </span><span class="cov4" title="3">{
+                if errors.Is(err, pgx.ErrNoRows) </span><span class="cov4" title="3">{
+                        return models.Order{}, models.ErrOrderNotFound
+                }</span>
+                <span class="cov0" title="0">return models.Order{}, err</span>
+        }
+
+        <span class="cov8" title="9">itemRows, err := or.Pool.Query(ctx, itemsQry, orderID)
+        if err != nil </span><span class="cov0" title="0">{
+                return models.Order{}, err
+        }</span>
+        <span class="cov8" title="9">defer itemRows.Close()
+
+        itemsData, err := pgx.CollectRows(itemRows, pgx.RowToStructByName[itemDTO])
+        if err != nil </span><span class="cov0" title="0">{
+                return models.Order{}, err
+        }</span>
+
+        <span class="cov8" title="9">return orderToDomain(oderData, itemsData), nil</span>
+}
+
+func (or *OrdersRepo) Close() error <span class="cov1" title="1">{
+        or.Pool.Close()
+        return nil
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package pgstocks
+
+import (
+        "errors"
+        "fmt"
+
+        "route256/loms/config"
+        "route256/loms/internal/loms/models"
+        "route256/loms/pkg/pgconnect"
+
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgxpool"
+        "github.com/rs/zerolog"
+        "github.com/rs/zerolog/log"
+        "golang.org/x/net/context"
+)
+
+type StocksRepo struct {
+        Pool *pgxpool.Pool
+}
+
+func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (*StocksRepo, error) <span class="cov1" title="1">{
+        url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+                cfg.User,
+                cfg.Password,
+                cfg.Host,
+                cfg.Port,
+                cfg.Name)
+
+        pool, err := pgconnect.Connect(ctx, url, logger)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">return &amp;StocksRepo{Pool: pool}, nil</span>
+}
+
+func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <span class="cov7" title="4">{
+        //nolint:goconst //Запросы держать рядом с их вызовом
+        retrieveQry := `SELECT available, reserved
+                                                FROM stocks.stocks
+                                                WHERE id = $1 FOR UPDATE`
+        updateQry := `UPDATE stocks.stocks
+                                        SET reserved = reserved + $1
+                                        WHERE id = $2`
+
+        tx, err := s.Pool.Begin(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("connection acquire fail: %w", err)
+        }</span>
+        <span class="cov7" title="4">defer func() </span><span class="cov7" title="4">{
+                if err = tx.Rollback(ctx); err != nil </span><span class="cov4" title="2">{
+                        if !errors.Is(err, pgx.ErrTxClosed) </span><span class="cov0" title="0">{
+                                log.Error().Err(err).Caller().Send()
+                        }</span>
+                }
+        }()
+
+        <span class="cov7" title="4">for _, item := range order.Items </span><span class="cov7" title="5">{
+                var available, reserved int64
+                if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov1" title="1">{
+                        if errors.Is(err, pgx.ErrNoRows) </span><span class="cov1" title="1">{
+                                return models.ErrItemNotFound
+                        }</span>
+                        <span class="cov0" title="0">return err</span>
+                }
+
+                <span class="cov7" title="4">toReserve := int64(item.Count)
+                if available &lt; reserved+toReserve </span><span class="cov1" title="1">{
+                        err = models.ErrInsufficientStock
+                        return err
+                }</span>
+
+                <span class="cov5" title="3">_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov4" title="2">if err = tx.Commit(ctx); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("transaction commit fail: %w", err)
+        }</span>
+
+        <span class="cov4" title="2">return nil</span>
+}
+
+func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) error <span class="cov1" title="1">{
+        retrieveQry := `SELECT available, reserved
+                                                FROM stocks.stocks
+                                                WHERE id = $1 FOR UPDATE`
+        updateQry := `UPDATE stocks.stocks
+                                        SET available = available - $1,
+                                            reserved = reserved - $1
+                                        WHERE id = $2`
+
+        tx, err := s.Pool.Begin(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("connection acquire fail: %w", err)
+        }</span>
+        <span class="cov1" title="1">defer func() </span><span class="cov1" title="1">{
+                if err = tx.Rollback(ctx); err != nil </span><span class="cov1" title="1">{
+                        if !errors.Is(err, pgx.ErrTxClosed) </span><span class="cov0" title="0">{
+                                log.Error().Err(err).Caller().Send()
+                        }</span>
+                }
+        }()
+
+        <span class="cov1" title="1">for _, item := range order.Items </span><span class="cov1" title="1">{
+                var available, reserved int64
+                if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov0" title="0">{
+                        if errors.Is(err, pgx.ErrNoRows) </span><span class="cov0" title="0">{
+                                return models.ErrItemNotFound
+                        }</span>
+                        <span class="cov0" title="0">return err</span>
+                }
+
+                <span class="cov1" title="1">toReserve := int64(item.Count)
+                if reserved &lt; toReserve </span><span class="cov0" title="0">{
+                        err = models.ErrReservationConflict
+                        return err
+                }</span>
+
+                <span class="cov1" title="1">_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov1" title="1">if err = tx.Commit(ctx); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("transaction commit fail: %w", err)
+        }</span>
+
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) error <span class="cov4" title="2">{
+        retrieveQry := `SELECT available, reserved
+                                                FROM stocks.stocks
+                                                WHERE id = $1 FOR UPDATE`
+        updateQry := `UPDATE stocks.stocks
+                                        SET reserved = reserved - $1
+                                        WHERE id = $2`
+
+        tx, err := s.Pool.Begin(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("connection acquire fail: %w", err)
+        }</span>
+        <span class="cov4" title="2">defer func() </span><span class="cov4" title="2">{
+                if err = tx.Rollback(ctx); err != nil </span><span class="cov4" title="2">{
+                        if !errors.Is(err, pgx.ErrTxClosed) </span><span class="cov0" title="0">{
+                                log.Error().Err(err).Caller().Send()
+                        }</span>
+                }
+        }()
+
+        <span class="cov4" title="2">for _, item := range order.Items </span><span class="cov7" title="4">{
+                var available, reserved int64
+                if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov0" title="0">{
+                        if errors.Is(err, pgx.ErrNoRows) </span><span class="cov0" title="0">{
+                                return models.ErrItemNotFound
+                        }</span>
+                        <span class="cov0" title="0">return err</span>
+                }
+
+                <span class="cov7" title="4">toReserve := int64(item.Count)
+                if reserved &lt; toReserve </span><span class="cov0" title="0">{
+                        err = models.ErrReservationConflict
+                        return err
+                }</span>
+
+                <span class="cov7" title="4">_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov4" title="2">if err = tx.Commit(ctx); err != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("transaction commit fail: %w", err)
+        }</span>
+
+        <span class="cov4" title="2">return nil</span>
+}
+
+func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) <span class="cov10" title="8">{
+        retrieveQry := `SELECT available, reserved
+                                                FROM stocks.stocks
+                                                WHERE id = $1`
+
+        var available, reserved int64
+        if err := s.Pool.QueryRow(ctx, retrieveQry, skuID).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov1" title="1">{
+                if errors.Is(err, pgx.ErrNoRows) </span><span class="cov1" title="1">{
+                        return 0, models.ErrItemNotFound
+                }</span>
+                <span class="cov0" title="0">return 0, err</span>
+        }
+
+        <span class="cov9" title="7">return available - reserved, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package stocksmem
 
 import (
         "context"
@@ -201,7 +659,7 @@ type Stocks struct {
         reserved map[uint32]int64 // Зарезервированные товары (не оплаченные) (skuID -&gt; amount)
 }
 
-func New() (*Stocks, error) <span class="cov1" title="1">{
+func New() (*Stocks, error) <span class="cov0" title="0">{
         stocks := &amp;Stocks{
                 mu:       &amp;sync.RWMutex{},
                 stocks:   make(map[uint32]int64),
@@ -212,10 +670,10 @@ func New() (*Stocks, error) <span class="cov1" title="1">{
                 return nil, err
         }</span>
 
-        <span class="cov1" title="1">return stocks, nil</span>
+        <span class="cov0" title="0">return stocks, nil</span>
 }
 
-func (s *Stocks) Reserve(_ context.Context, order models.Order) error <span class="cov7" title="10">{
+func (s *Stocks) Reserve(_ context.Context, order models.Order) error <span class="cov0" title="0">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
@@ -223,35 +681,35 @@ func (s *Stocks) Reserve(_ context.Context, order models.Order) error <span clas
         changesSnapshot := make(map[uint32]int64)
 
         // для восстановления данных в исходное состояние в случае возникновения ошибки
-        defer func() </span><span class="cov7" title="10">{
-                if err != nil </span><span class="cov3" title="2">{
+        defer func() </span><span class="cov0" title="0">{
+                if err != nil </span><span class="cov0" title="0">{
                         for sku, amount := range changesSnapshot </span><span class="cov0" title="0">{
                                 s.reserved[sku] -= amount
                         }</span>
                 }
         }()
 
-        <span class="cov7" title="10">for _, item := range order.Items </span><span class="cov9" title="17">{
+        <span class="cov0" title="0">for _, item := range order.Items </span><span class="cov0" title="0">{
                 available, ok := s.stocks[item.SKUid]
-                if !ok </span><span class="cov1" title="1">{
+                if !ok </span><span class="cov0" title="0">{
                         err = models.ErrItemNotFound
                         return err
                 }</span>
 
-                <span class="cov9" title="16">toReserve := int64(item.Count)
-                if available &lt; s.reserved[item.SKUid]+toReserve </span><span class="cov1" title="1">{
+                <span class="cov0" title="0">toReserve := int64(item.Count)
+                if available &lt; s.reserved[item.SKUid]+toReserve </span><span class="cov0" title="0">{
                         err = models.ErrInsufficientStock
                         return err
                 }</span>
 
-                <span class="cov9" title="15">changesSnapshot[item.SKUid] += toReserve
+                <span class="cov0" title="0">changesSnapshot[item.SKUid] += toReserve
                 s.reserved[item.SKUid] += toReserve</span>
         }
 
-        <span class="cov7" title="8">return nil</span>
+        <span class="cov0" title="0">return nil</span>
 }
 
-func (s *Stocks) ReserveRemove(_ context.Context, order models.Order) error <span class="cov1" title="1">{
+func (s *Stocks) ReserveRemove(_ context.Context, order models.Order) error <span class="cov0" title="0">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
@@ -259,7 +717,7 @@ func (s *Stocks) ReserveRemove(_ context.Context, order models.Order) error <spa
         changesSnapshot := make(map[uint32]int64)
 
         // для восстановления данных в исходное состояние в случае возникновения ошибки
-        defer func() </span><span class="cov1" title="1">{
+        defer func() </span><span class="cov0" title="0">{
                 if err != nil </span><span class="cov0" title="0">{
                         for sku, amount := range changesSnapshot </span><span class="cov0" title="0">{
                                 s.reserved[sku] += amount
@@ -268,7 +726,7 @@ func (s *Stocks) ReserveRemove(_ context.Context, order models.Order) error <spa
                 }
         }()
 
-        <span class="cov1" title="1">for _, item := range order.Items </span><span class="cov1" title="1">{
+        <span class="cov0" title="0">for _, item := range order.Items </span><span class="cov0" title="0">{
                 // не проверяем s.stocks так как согласованность s.reserved c s.stocks проверяется в Reserve()
                 reserved, ok := s.reserved[item.SKUid]
                 if !ok </span><span class="cov0" title="0">{
@@ -276,21 +734,21 @@ func (s *Stocks) ReserveRemove(_ context.Context, order models.Order) error <spa
                         return err
                 }</span>
 
-                <span class="cov1" title="1">toRemove := int64(item.Count)
+                <span class="cov0" title="0">toRemove := int64(item.Count)
                 if reserved &lt; toRemove </span><span class="cov0" title="0">{
                         err = models.ErrReservationConflict
                         return err
                 }</span>
 
-                <span class="cov1" title="1">changesSnapshot[item.SKUid] += toRemove
+                <span class="cov0" title="0">changesSnapshot[item.SKUid] += toRemove
                 s.reserved[item.SKUid] -= toRemove
                 s.stocks[item.SKUid] -= toRemove</span>
         }
 
-        <span class="cov1" title="1">return nil</span>
+        <span class="cov0" title="0">return nil</span>
 }
 
-func (s *Stocks) ReserveCancel(_ context.Context, order models.Order) error <span class="cov6" title="7">{
+func (s *Stocks) ReserveCancel(_ context.Context, order models.Order) error <span class="cov0" title="0">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
@@ -298,7 +756,7 @@ func (s *Stocks) ReserveCancel(_ context.Context, order models.Order) error <spa
         changesSnapshot := make(map[uint32]int64)
 
         // для восстановления данных в исходное состояние в случае возникновения ошибки
-        defer func() </span><span class="cov6" title="7">{
+        defer func() </span><span class="cov0" title="0">{
                 if err != nil </span><span class="cov0" title="0">{
                         for sku, amount := range changesSnapshot </span><span class="cov0" title="0">{
                                 s.reserved[sku] += amount
@@ -306,41 +764,41 @@ func (s *Stocks) ReserveCancel(_ context.Context, order models.Order) error <spa
                 }
         }()
 
-        <span class="cov6" title="7">for _, item := range order.Items </span><span class="cov8" title="14">{
+        <span class="cov0" title="0">for _, item := range order.Items </span><span class="cov0" title="0">{
                 reserved, ok := s.reserved[item.SKUid]
                 if !ok </span><span class="cov0" title="0">{
                         err = models.ErrItemNotFound
                         return err
                 }</span>
 
-                <span class="cov8" title="14">toRemove := int64(item.Count)
+                <span class="cov0" title="0">toRemove := int64(item.Count)
                 if reserved &lt; toRemove </span><span class="cov0" title="0">{
                         err = models.ErrReservationConflict
                         return err
                 }</span>
 
-                <span class="cov8" title="14">changesSnapshot[item.SKUid] += toRemove
+                <span class="cov0" title="0">changesSnapshot[item.SKUid] += toRemove
                 s.reserved[item.SKUid] -= toRemove</span>
         }
 
-        <span class="cov6" title="7">return nil</span>
+        <span class="cov0" title="0">return nil</span>
 }
 
-func (s *Stocks) GetBySKU(_ context.Context, skuID uint32) (int64, error) <span class="cov7" title="8">{
+func (s *Stocks) GetBySKU(_ context.Context, skuID uint32) (int64, error) <span class="cov0" title="0">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
-        if _, ok := s.stocks[skuID]; !ok </span><span class="cov1" title="1">{
+        if _, ok := s.stocks[skuID]; !ok </span><span class="cov0" title="0">{
                 return 0, models.ErrItemNotFound
         }</span>
         // нет проверки на наличие в s.reserved так как нерелевантна (в любом случае получим zero value)
-        <span class="cov6" title="7">total := s.stocks[skuID] - s.reserved[skuID]
+        <span class="cov0" title="0">total := s.stocks[skuID] - s.reserved[skuID]
 
         return total, nil</span>
 }
 
 // UploadStockData - добавляет данные из stock-data.json. Перезаписывает данные в случае их наличия
-func (s *Stocks) uploadStockData() error <span class="cov1" title="1">{
+func (s *Stocks) uploadStockData() error <span class="cov0" title="0">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
@@ -356,67 +814,67 @@ func (s *Stocks) uploadStockData() error <span class="cov1" title="1">{
                 return err
         }</span>
 
-        <span class="cov1" title="1">for _, stock := range stockItems </span><span class="cov10" title="20">{
+        <span class="cov0" title="0">for _, stock := range stockItems </span><span class="cov0" title="0">{
                 s.stocks[stock.SKU] += int64(stock.TotalCount)
                 s.reserved[stock.SKU] = int64(stock.Reserved)
         }</span>
 
-        <span class="cov1" title="1">return nil</span>
+        <span class="cov0" title="0">return nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package impl
+		<pre class="file" id="file5" style="display: none">package impl
 
 import (
         "route256/loms/internal/loms/models"
         lomsservicev1 "route256/loms/pkg/api/loms/v1"
 )
 
-func ItemToDomain(item *lomsservicev1.Item) models.Item <span class="cov10" title="25">{
+func ItemToDomain(item *lomsservicev1.Item) models.Item <span class="cov10" title="13">{
         return models.Item{
                 SKUid: item.Sku,
                 Count: item.Count,
         }
 }</span>
 
-func ItemToProto(item models.Item) *lomsservicev1.Item <span class="cov7" title="9">{
+func ItemToProto(item models.Item) *lomsservicev1.Item <span class="cov8" title="9">{
         return &amp;lomsservicev1.Item{
                 Sku:   item.SKUid,
                 Count: item.Count,
         }
 }</span>
 
-func OrderToDomain(req *lomsservicev1.OrderCreateRequest) models.Order <span class="cov8" title="14">{
+func OrderToDomain(req *lomsservicev1.OrderCreateRequest) models.Order <span class="cov8" title="8">{
         items := make([]models.Item, len(req.Items))
-        for i, item := range req.Items </span><span class="cov10" title="25">{
+        for i, item := range req.Items </span><span class="cov10" title="13">{
                 items[i] = ItemToDomain(item)
         }</span>
-        <span class="cov8" title="14">return models.Order{
+        <span class="cov8" title="8">return models.Order{
                 UserID: req.User,
                 Items:  items,
                 Status: models.UnknownStatus,
         }</span>
 }
 
-func OrderToProto(order models.Order) *lomsservicev1.OrderInfoResponse <span class="cov5" title="5">{
+func OrderToProto(order models.Order) *lomsservicev1.OrderInfoResponse <span class="cov6" title="5">{
         items := make([]*lomsservicev1.Item, len(order.Items))
-        for i, item := range order.Items </span><span class="cov7" title="9">{
+        for i, item := range order.Items </span><span class="cov8" title="9">{
                 items[i] = ItemToProto(item)
         }</span>
-        <span class="cov5" title="5">return &amp;lomsservicev1.OrderInfoResponse{
+        <span class="cov6" title="5">return &amp;lomsservicev1.OrderInfoResponse{
                 User:   order.UserID,
                 Items:  items,
                 Status: StatusToProto(order.Status),
         }</span>
 }
 
-func StatusToProto(status models.OrderStatus) lomsservicev1.Status <span class="cov5" title="5">{
+func StatusToProto(status models.OrderStatus) lomsservicev1.Status <span class="cov6" title="5">{
         switch status </span>{
         case models.NewStatus:<span class="cov0" title="0">
                 return lomsservicev1.Status_STATUS_NEW</span>
-        case models.AwaitingPaymentStatus:<span class="cov2" title="2">
+        case models.AwaitingPaymentStatus:<span class="cov3" title="2">
                 return lomsservicev1.Status_STATUS_AWAITING_PAYMENT</span>
-        case models.PayedStatus:<span class="cov2" title="2">
+        case models.PayedStatus:<span class="cov3" title="2">
                 return lomsservicev1.Status_STATUS_PAYED</span>
         case models.CancelledStatus:<span class="cov1" title="1">
                 return lomsservicev1.Status_STATUS_CANCELLED</span>
@@ -428,7 +886,7 @@ func StatusToProto(status models.OrderStatus) lomsservicev1.Status <span class="
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package impl
+		<pre class="file" id="file6" style="display: none">package impl
 
 import (
         "errors"
@@ -457,7 +915,7 @@ func mapError(err error) error <span class="cov10" title="21">{
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package impl
+		<pre class="file" id="file7" style="display: none">package impl
 
 import (
         "context"
@@ -496,14 +954,14 @@ func New(
         }
 }</span>
 
-func (i *Impl) OrderCreate(ctx context.Context, req *lomsservicev1.OrderCreateRequest) (*lomsservicev1.OrderCreateResponse, error) <span class="cov9" title="14">{
+func (i *Impl) OrderCreate(ctx context.Context, req *lomsservicev1.OrderCreateRequest) (*lomsservicev1.OrderCreateResponse, error) <span class="cov7" title="8">{
         orderID, err := i.server.OrderCreate(ctx, OrderToDomain(req))
         if err != nil </span><span class="cov5" title="5">{
                 i.log.Error().Err(err).Send()
                 return nil, mapError(err)
         }</span>
 
-        <span class="cov7" title="9">return &amp;lomsservicev1.OrderCreateResponse{OrderID: orderID}, nil</span>
+        <span class="cov4" title="3">return &amp;lomsservicev1.OrderCreateResponse{OrderID: orderID}, nil</span>
 }
 
 func (i *Impl) OrderInfo(ctx context.Context, req *lomsservicev1.OrderInfoRequest) (*lomsservicev1.OrderInfoResponse, error) <span class="cov7" title="8">{
@@ -525,14 +983,14 @@ func (i *Impl) OrderPay(ctx context.Context, req *lomsservicev1.OrderPayRequest)
 
         <span class="cov3" title="2">return &amp;emptypb.Empty{}, nil</span>
 }
-func (i *Impl) OrderCancel(ctx context.Context, req *lomsservicev1.OrderCancelRequest) (*emptypb.Empty, error) <span class="cov8" title="12">{
+func (i *Impl) OrderCancel(ctx context.Context, req *lomsservicev1.OrderCancelRequest) (*emptypb.Empty, error) <span class="cov6" title="7">{
         err := i.server.OrderCancel(ctx, req.OrderID)
         if err != nil </span><span class="cov5" title="4">{
                 i.log.Error().Err(err).Send()
                 return nil, mapError(err)
         }</span>
 
-        <span class="cov7" title="8">return &amp;emptypb.Empty{}, nil</span>
+        <span class="cov4" title="3">return &amp;emptypb.Empty{}, nil</span>
 }
 func (i *Impl) StocksInfo(ctx context.Context, req *lomsservicev1.StocksInfoRequest) (*lomsservicev1.StocksInfoResponse, error) <span class="cov8" title="11">{
         count, err := i.server.StocksInfo(ctx, req.Sku)
@@ -545,7 +1003,7 @@ func (i *Impl) StocksInfo(ctx context.Context, req *lomsservicev1.StocksInfoRequ
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package interceptors
+		<pre class="file" id="file8" style="display: none">package interceptors
 
 import (
         "context"
@@ -565,10 +1023,10 @@ func LoggingInterceptor(logger zerolog.Logger) grpc.UnaryServerInterceptor <span
                 req any,
                 info *grpc.UnaryServerInfo,
                 handler grpc.UnaryHandler,
-        ) (resp any, err error) </span><span class="cov10" title="36">{
+        ) (resp any, err error) </span><span class="cov10" title="25">{
                 logRequest(logger, req, info)
 
-                defer func(start time.Time) </span><span class="cov10" title="36">{
+                defer func(start time.Time) </span><span class="cov10" title="25">{
                         if err != nil </span><span class="cov6" title="8">{
                                 logEvent := logger.With().
                                         Str("method", info.FullMethod).
@@ -588,42 +1046,42 @@ func LoggingInterceptor(logger zerolog.Logger) grpc.UnaryServerInterceptor <span
                                 <span class="cov6" title="8">return</span>
                         }
 
-                        <span class="cov9" title="28">logResponse(logger, time.Since(start), resp, info)</span>
+                        <span class="cov8" title="17">logResponse(logger, time.Since(start), resp, info)</span>
                 }(time.Now())
 
-                <span class="cov10" title="36">return handler(logger.WithContext(ctx), req)</span>
+                <span class="cov10" title="25">return handler(logger.WithContext(ctx), req)</span>
         }
 }
 
-func logRequest(logger zerolog.Logger, req any, info *grpc.UnaryServerInfo) <span class="cov10" title="36">{
+func logRequest(logger zerolog.Logger, req any, info *grpc.UnaryServerInfo) <span class="cov10" title="25">{
         reqProto, ok := req.(proto.Message)
         if !ok </span><span class="cov0" title="0">{
                 logger.Warn().Msg("failed to cast request to proto.Message")
         }</span>
 
-        <span class="cov10" title="36">reqBytes, err := protojson.Marshal(reqProto)
+        <span class="cov10" title="25">reqBytes, err := protojson.Marshal(reqProto)
         if err != nil </span><span class="cov0" title="0">{
                 logger.Warn().Err(err).Msg("failed to marshal request")
         }</span>
 
-        <span class="cov10" title="36">logger.Debug().
+        <span class="cov10" title="25">logger.Debug().
                 Str("method", info.FullMethod).
                 Bytes("request body", reqBytes).
                 Send()</span>
 }
 
-func logResponse(logger zerolog.Logger, timeTaken time.Duration, resp any, info *grpc.UnaryServerInfo) <span class="cov9" title="28">{
+func logResponse(logger zerolog.Logger, timeTaken time.Duration, resp any, info *grpc.UnaryServerInfo) <span class="cov8" title="17">{
         respProto, ok := resp.(proto.Message)
         if !ok </span><span class="cov0" title="0">{
                 logger.Warn().Msg("failed to cast response to proto.Message")
         }</span>
 
-        <span class="cov9" title="28">respBytes, err := protojson.Marshal(respProto)
+        <span class="cov8" title="17">respBytes, err := protojson.Marshal(respProto)
         if err != nil </span><span class="cov0" title="0">{
                 logger.Warn().Err(err).Msg("failed to marshal response")
         }</span>
 
-        <span class="cov9" title="28">logger.Debug().
+        <span class="cov8" title="17">logger.Debug().
                 Str("method", info.FullMethod).
                 Dur("duration", timeTaken).
                 Bytes("response", respBytes).
@@ -631,7 +1089,7 @@ func logResponse(logger zerolog.Logger, timeTaken time.Duration, resp any, info 
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package interceptors
+		<pre class="file" id="file9" style="display: none">package interceptors
 
 import (
         "context"
@@ -643,21 +1101,21 @@ import (
         "google.golang.org/grpc/status"
 )
 
-func RecoverPanic(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) <span class="cov10" title="36">{
+func RecoverPanic(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) <span class="cov10" title="25">{
         logger := *zerolog.Ctx(ctx)
 
-        defer func() </span><span class="cov10" title="36">{
+        defer func() </span><span class="cov10" title="25">{
                 if rec := recover(); rec != nil </span><span class="cov0" title="0">{
                         logger.Error().Any("panic", rec).Bytes("stack", debug.Stack()).Send()
                         err = status.Errorf(codes.Internal, "panic: %v", rec)
                 }</span>
         }()
 
-        <span class="cov10" title="36">return handler(ctx, req)</span>
+        <span class="cov10" title="25">return handler(ctx, req)</span>
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package interceptors
+		<pre class="file" id="file10" style="display: none">package interceptors
 
 import (
         "context"
@@ -671,17 +1129,17 @@ type validator interface {
         Validate() error
 }
 
-func Validate(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) <span class="cov10" title="36">{
-        if v, ok := req.(validator); ok </span><span class="cov9" title="35">{
+func Validate(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) <span class="cov10" title="25">{
+        if v, ok := req.(validator); ok </span><span class="cov9" title="24">{
                 if err := v.Validate(); err != nil </span><span class="cov0" title="0">{
                         return nil, status.Error(codes.InvalidArgument, err.Error())
                 }</span>
         }
-        <span class="cov10" title="36">return handler(ctx, req)</span>
+        <span class="cov10" title="25">return handler(ctx, req)</span>
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package ggrpc
+		<pre class="file" id="file11" style="display: none">package ggrpc
 
 import (
         "route256/loms/config"
@@ -722,7 +1180,7 @@ func buildOptions(log zerolog.Logger) []grpc.ServerOption <span class="cov8" tit
 }</span>
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package httpgate
+		<pre class="file" id="file12" style="display: none">package httpgate
 
 import (
         "context"
@@ -774,7 +1232,7 @@ func customErr(w http.ResponseWriter, code int, msg string) <span class="cov0" t
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package httpgate
+		<pre class="file" id="file13" style="display: none">package httpgate
 
 import (
         "context"
@@ -820,12 +1278,14 @@ func New(ctx context.Context, cfg config.HTTPGateCfg) (*http.Server, error) <spa
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package resources
+		<pre class="file" id="file14" style="display: none">package resources
 
 import (
+        "context"
+
         "route256/loms/config"
-        "route256/loms/internal/loms/adapters/ordersmem"
-        "route256/loms/internal/loms/adapters/stocksmem"
+        "route256/loms/internal/loms/adapters/pgorders"
+        "route256/loms/internal/loms/adapters/pgstocks"
         "route256/loms/internal/loms/usecase"
 
         "route256/loms/pkg/logger"
@@ -839,32 +1299,37 @@ type Resources struct {
         stopResources []func() error
 }
 
-func New(cfg config.Config) (Resources, error) <span class="cov8" title="1">{
+func New(ctx context.Context, cfg config.Config) (Resources, error) <span class="cov8" title="1">{
         log, err := logger.New(cfg.LoggerLVL)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
 
-        <span class="cov8" title="1">stockStorage, err := stocksmem.New()
+        <span class="cov8" title="1">stockStorage, err := pgstocks.New(ctx, cfg.StocksRepo, log)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
 
-        <span class="cov8" title="1">orderStorage := ordersmem.New()
+        <span class="cov8" title="1">orderStorage, err := pgorders.New(ctx, cfg.OrdersRepo, log)
+        if err != nil </span><span class="cov0" title="0">{
+                return Resources{}, err
+        }</span>
 
-        return Resources{
+        <span class="cov8" title="1">return Resources{
                 Log: log,
                 UseCase: usecase.New(
                         log,
                         orderStorage,
                         stockStorage,
                 ),
-                stopResources: []func() error{},
+                stopResources: []func() error{
+                        orderStorage.Close,
+                },
         }, nil</span>
 }
 
 func (r Resources) Stop() <span class="cov8" title="1">{
-        for _, stop := range r.stopResources </span><span class="cov0" title="0">{
+        for _, stop := range r.stopResources </span><span class="cov8" title="1">{
                 if err := stop(); err != nil </span><span class="cov0" title="0">{
                         r.Log.Error().Err(err).Send()
                 }</span>
@@ -872,7 +1337,7 @@ func (r Resources) Stop() <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package loms
+		<pre class="file" id="file15" style="display: none">package loms
 
 import (
         "context"
@@ -903,7 +1368,7 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
         if err != nil </span><span class="cov0" title="0">{
                 return err
         }</span>
-        <span class="cov8" title="1">res, err := resources.New(cfg)
+        <span class="cov8" title="1">res, err := resources.New(ctx, cfg)
         if err != nil </span><span class="cov0" title="0">{
                 return err
         }</span>
@@ -947,7 +1412,7 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package usecase
+		<pre class="file" id="file16" style="display: none">package usecase
 
 import (
         "context"
@@ -990,22 +1455,23 @@ func New(
         }
 }</span>
 
-func (uc *UseCase) OrderCreate(ctx context.Context, order models.Order) (int64, error) <span class="cov9" title="15">{
+func (uc *UseCase) OrderCreate(ctx context.Context, order models.Order) (int64, error) <span class="cov7" title="9">{
         var err error
+        order.Status = models.NewStatus
 
         orderID, err := uc.orders.Create(ctx, order)
         if err != nil </span><span class="cov3" title="2">{
                 return 0, err
         }</span>
 
-        <span class="cov8" title="13">defer func() </span><span class="cov8" title="13">{
+        <span class="cov6" title="7">defer func() </span><span class="cov6" title="7">{
                 if err != nil </span><span class="cov4" title="3">{
                         uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation failed")
                         err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
                         if err != nil </span><span class="cov1" title="1">{
                                 uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
                         }</span>
-                } else<span class="cov7" title="10"> {
+                } else<span class="cov5" title="4"> {
                         uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation success")
                         err = uc.orders.SetStatus(ctx, orderID, models.AwaitingPaymentStatus)
                         if err != nil </span><span class="cov1" title="1">{
@@ -1014,11 +1480,11 @@ func (uc *UseCase) OrderCreate(ctx context.Context, order models.Order) (int64, 
                 }
         }()
 
-        <span class="cov8" title="13">if err = uc.stocks.Reserve(ctx, order); err != nil </span><span class="cov4" title="3">{
+        <span class="cov6" title="7">if err = uc.stocks.Reserve(ctx, order); err != nil </span><span class="cov4" title="3">{
                 return 0, err
         }</span>
 
-        <span class="cov7" title="10">return orderID, nil</span>
+        <span class="cov5" title="4">return orderID, nil</span>
 }
 func (uc *UseCase) OrderInfo(ctx context.Context, orderID int64) (models.Order, error) <span class="cov6" title="7">{
         order, err := uc.orders.GetByOrderID(ctx, orderID)
@@ -1058,25 +1524,25 @@ func (uc *UseCase) OrderPay(ctx context.Context, orderID int64) error <span clas
         <span class="cov5" title="4">err = uc.stocks.ReserveRemove(ctx, order)
         return err</span>
 }
-func (uc *UseCase) OrderCancel(ctx context.Context, orderID int64) error <span class="cov8" title="14">{
+func (uc *UseCase) OrderCancel(ctx context.Context, orderID int64) error <span class="cov7" title="9">{
         order, err := uc.orders.GetByOrderID(ctx, orderID)
         if err != nil </span><span class="cov3" title="2">{
                 return err
         }</span>
 
         // Оставим возможность отмены заказа только со статусом new и awaiting_payment
-        <span class="cov8" title="12">if order.Status != models.AwaitingPaymentStatus &amp;&amp; order.Status != models.NewStatus </span><span class="cov3" title="2">{
+        <span class="cov6" title="7">if order.Status != models.AwaitingPaymentStatus &amp;&amp; order.Status != models.NewStatus </span><span class="cov3" title="2">{
                 return models.ErrOrderStatusConflict
         }</span>
 
-        <span class="cov7" title="10">defer func() </span><span class="cov7" title="10">{
+        <span class="cov5" title="5">defer func() </span><span class="cov5" title="5">{
                 if err != nil </span><span class="cov1" title="1">{
                         uc.log.Error().Err(err).Str("status", "fail").Int64("orderID", orderID).Msg("reservation cancellation failed")
                         err = uc.orders.SetStatus(ctx, orderID, models.FailedStatus)
                         if err != nil </span><span class="cov1" title="1">{
                                 uc.log.Error().Err(err).Str("set fail", "FAILED").Int64("orderID", orderID).Send()
                         }</span>
-                } else<span class="cov7" title="9"> {
+                } else<span class="cov5" title="4"> {
                         uc.log.Debug().Str("status", "success").Int64("orderID", orderID).Msg("reservation cancellation success")
                         err = uc.orders.SetStatus(ctx, orderID, models.CancelledStatus)
                         if err != nil </span><span class="cov1" title="1">{
@@ -1086,7 +1552,7 @@ func (uc *UseCase) OrderCancel(ctx context.Context, orderID int64) error <span c
         }()
 
         // Нужно записать результата в err что бы его можно было обработать в defer
-        <span class="cov7" title="10">err = uc.stocks.ReserveCancel(ctx, order)
+        <span class="cov5" title="5">err = uc.stocks.ReserveCancel(ctx, order)
         return err</span>
 }
 func (uc *UseCase) StocksInfo(ctx context.Context, skuID uint32) (int64, error) <span class="cov7" title="10">{
