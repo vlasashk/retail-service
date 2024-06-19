@@ -50,7 +50,9 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
 	}
 	defer func() {
 		if err = tx.Rollback(ctx); err != nil {
-			log.Error().Err(err).Caller().Send()
+			if !errors.Is(err, pgx.ErrTxClosed) {
+				log.Error().Err(err).Caller().Send()
+			}
 		}
 	}()
 
@@ -97,7 +99,9 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 	}
 	defer func() {
 		if err = tx.Rollback(ctx); err != nil {
-			log.Error().Err(err).Caller().Send()
+			if !errors.Is(err, pgx.ErrTxClosed) {
+				log.Error().Err(err).Caller().Send()
+			}
 		}
 	}()
 
@@ -143,7 +147,9 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 	}
 	defer func() {
 		if err = tx.Rollback(ctx); err != nil {
-			log.Error().Err(err).Caller().Send()
+			if !errors.Is(err, pgx.ErrTxClosed) {
+				log.Error().Err(err).Caller().Send()
+			}
 		}
 	}()
 

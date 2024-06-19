@@ -50,7 +50,9 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
 	}
 	defer func() {
 		if err = tx.Rollback(ctx); err != nil {
-			log.Error().Err(err).Caller().Send()
+			if !errors.Is(err, pgx.ErrTxClosed) {
+				log.Error().Err(err).Caller().Send()
+			}
 		}
 	}()
 
