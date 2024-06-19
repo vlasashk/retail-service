@@ -5,7 +5,7 @@ import (
 
 	"route256/loms/config"
 	"route256/loms/internal/loms/adapters/pgorders"
-	"route256/loms/internal/loms/adapters/stocksmem"
+	"route256/loms/internal/loms/adapters/pgstocks"
 	"route256/loms/internal/loms/usecase"
 
 	"route256/loms/pkg/logger"
@@ -25,7 +25,7 @@ func New(ctx context.Context, cfg config.Config) (Resources, error) {
 		return Resources{}, err
 	}
 
-	stockStorage, err := stocksmem.New()
+	stockStorage, err := pgstocks.New(ctx, cfg.StocksRepo, log)
 	if err != nil {
 		return Resources{}, err
 	}

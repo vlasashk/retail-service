@@ -17,7 +17,6 @@ type tracer struct {
 var timeout = 10 * time.Second
 
 func Connect(ctx context.Context, connString string, logger zerolog.Logger) (*pgxpool.Pool, error) {
-
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

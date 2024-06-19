@@ -7,6 +7,7 @@ type Config struct {
 	LoggerLVL  string `env:"LOMS_LOG_LVL" env-default:"debug"`
 	Gateway    HTTPGateCfg
 	OrdersRepo OrdersRepoCfg
+	StocksRepo StocksRepoCfg
 }
 
 type HTTPGateCfg struct {
@@ -25,7 +26,6 @@ type OrdersRepoCfg struct {
 }
 
 type StocksRepoCfg struct {
-	Schema   string `env:"STOCKS_DB_SCHEMA" env-default:"stocks"`
 	Host     string `env:"STOCKS_DB_HOST" env-default:"localhost"`
 	Port     string `env:"STOCKS_DB_PORT" env-default:"5432"`
 	Name     string `env:"STOCKS_DB_NAME" env-default:"postgres"`

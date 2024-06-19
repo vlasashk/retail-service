@@ -93,10 +93,10 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 }
 
 func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) {
-	orderQry := `SELECT id, user_id, status, created_at, updated_at
+	orderQry := `SELECT id, user_id, status
 					FROM orders.orders
 					WHERE id=$1`
-	itemsQry := `SELECT sku_id, order_id, count, created_at, updated_at
+	itemsQry := `SELECT sku_id, order_id, count
 					FROM orders.order_items
 					WHERE order_id=$1`
 

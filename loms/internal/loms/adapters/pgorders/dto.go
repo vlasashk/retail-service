@@ -19,16 +19,16 @@ type orderDTO struct {
 	ID        int64     `db:"id"`
 	UserID    int64     `db:"user_id"`
 	Status    string    `db:"status"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt time.Time `db:"-"`
+	UpdatedAt time.Time `db:"-"`
 }
 
 type itemDTO struct {
 	SKU       uint32    `db:"sku_id"`
 	OrderID   int64     `db:"order_id"`
 	Count     uint32    `db:"count"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
+	CreatedAt time.Time `db:"-"`
+	UpdatedAt time.Time `db:"-"`
 }
 
 func statusToDTO(status models.OrderStatus) string {
