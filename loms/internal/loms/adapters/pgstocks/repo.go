@@ -36,6 +36,7 @@ func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (
 }
 
 func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
+	//nolint:goconst //Запросы держать рядом с их вызовом
 	retrieveQry := `SELECT available, reserved
 						FROM stocks.stocks
 						WHERE id = $1 FOR UPDATE`
