@@ -59,35 +59,49 @@
 				
 				<option value="file1">route256/loms/internal/loms/adapters/pgorders/dto.go (83.3%)</option>
 				
-				<option value="file2">route256/loms/internal/loms/adapters/pgorders/repo.go (77.4%)</option>
+				<option value="file2">route256/loms/internal/loms/adapters/pgorders/pgordersqry/copyfrom.go (90.0%)</option>
 				
-				<option value="file3">route256/loms/internal/loms/adapters/pgstocks/repo.go (71.3%)</option>
+				<option value="file3">route256/loms/internal/loms/adapters/pgorders/pgordersqry/db.go (100.0%)</option>
 				
-				<option value="file4">route256/loms/internal/loms/adapters/stocksmem/stocks.go (0.0%)</option>
+				<option value="file4">route256/loms/internal/loms/adapters/pgorders/pgordersqry/models.go (23.1%)</option>
 				
-				<option value="file5">route256/loms/internal/loms/ports/ggrpc/impl/dto.go (82.4%)</option>
+				<option value="file5">route256/loms/internal/loms/adapters/pgorders/pgordersqry/queries.sql.go (85.7%)</option>
 				
-				<option value="file6">route256/loms/internal/loms/ports/ggrpc/impl/errors.go (100.0%)</option>
+				<option value="file6">route256/loms/internal/loms/adapters/pgorders/repo.go (76.2%)</option>
 				
-				<option value="file7">route256/loms/internal/loms/ports/ggrpc/impl/impl.go (100.0%)</option>
+				<option value="file7">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/db.go (100.0%)</option>
 				
-				<option value="file8">route256/loms/internal/loms/ports/ggrpc/interceptors/logger.go (77.8%)</option>
+				<option value="file8">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/models.go (0.0%)</option>
 				
-				<option value="file9">route256/loms/internal/loms/ports/ggrpc/interceptors/recover.go (66.7%)</option>
+				<option value="file9">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/queries.sql.go (100.0%)</option>
 				
-				<option value="file10">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
+				<option value="file10">route256/loms/internal/loms/adapters/pgstocks/repo.go (70.9%)</option>
 				
-				<option value="file11">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
+				<option value="file11">route256/loms/internal/loms/adapters/stocksmem/stocks.go (0.0%)</option>
 				
-				<option value="file12">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
+				<option value="file12">route256/loms/internal/loms/ports/ggrpc/impl/dto.go (82.4%)</option>
 				
-				<option value="file13">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
+				<option value="file13">route256/loms/internal/loms/ports/ggrpc/impl/errors.go (100.0%)</option>
 				
-				<option value="file14">route256/loms/internal/loms/resources/resources.go (69.2%)</option>
+				<option value="file14">route256/loms/internal/loms/ports/ggrpc/impl/impl.go (100.0%)</option>
 				
-				<option value="file15">route256/loms/internal/loms/service.go (82.4%)</option>
+				<option value="file15">route256/loms/internal/loms/ports/ggrpc/interceptors/logger.go (77.8%)</option>
 				
-				<option value="file16">route256/loms/internal/loms/usecase/usecase.go (100.0%)</option>
+				<option value="file16">route256/loms/internal/loms/ports/ggrpc/interceptors/recover.go (66.7%)</option>
+				
+				<option value="file17">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
+				
+				<option value="file18">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
+				
+				<option value="file19">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
+				
+				<option value="file20">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
+				
+				<option value="file21">route256/loms/internal/loms/resources/resources.go (69.2%)</option>
+				
+				<option value="file22">route256/loms/internal/loms/service.go (82.4%)</option>
+				
+				<option value="file23">route256/loms/internal/loms/usecase/usecase.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -192,78 +206,62 @@ func (o *Orders) GetByOrderID(_ context.Context, orderID int64) (models.Order, e
 import (
         "time"
 
+        "route256/loms/internal/loms/adapters/pgorders/pgordersqry"
         "route256/loms/internal/loms/models"
+
+        "github.com/jackc/pgx/v5/pgtype"
 )
 
-const (
-        unknownStatus         string = "Unknown"
-        newStatus             string = "New"
-        awaitingPaymentStatus string = "AwaitingPayment"
-        payedStatus           string = "Payed"
-        cancelledStatus       string = "Cancelled"
-        failedStatus          string = "Failed"
-)
-
-type orderDTO struct {
-        ID        int64     `db:"id"`
-        UserID    int64     `db:"user_id"`
-        Status    string    `db:"status"`
-        CreatedAt time.Time `db:"-"`
-        UpdatedAt time.Time `db:"-"`
-}
-
-type itemDTO struct {
-        SKU       uint32    `db:"sku_id"`
-        OrderID   int64     `db:"order_id"`
-        Count     uint32    `db:"count"`
-        CreatedAt time.Time `db:"-"`
-        UpdatedAt time.Time `db:"-"`
-}
-
-func statusToDTO(status models.OrderStatus) string <span class="cov8" title="11">{
+func statusToDTO(status models.OrderStatus) pgordersqry.OrdersOrderStatus <span class="cov8" title="11">{
         switch status </span>{
         case models.NewStatus:<span class="cov5" title="4">
-                return newStatus</span>
+                return pgordersqry.OrdersOrderStatusNew</span>
         case models.AwaitingPaymentStatus:<span class="cov3" title="2">
-                return awaitingPaymentStatus</span>
+                return pgordersqry.OrdersOrderStatusAwaitingPayment</span>
         case models.PayedStatus:<span class="cov1" title="1">
-                return payedStatus</span>
+                return pgordersqry.OrdersOrderStatusPayed</span>
         case models.CancelledStatus:<span class="cov3" title="2">
-                return cancelledStatus</span>
+                return pgordersqry.OrdersOrderStatusCancelled</span>
         case models.FailedStatus:<span class="cov3" title="2">
-                return failedStatus</span>
+                return pgordersqry.OrdersOrderStatusFailed</span>
         default:<span class="cov0" title="0">
-                return unknownStatus</span>
+                return pgordersqry.OrdersOrderStatusUnknown</span>
         }
 }
 
-func statusToDomain(status string) models.OrderStatus <span class="cov8" title="9">{
+func statusToDomain(status pgordersqry.OrdersOrderStatus) models.OrderStatus <span class="cov8" title="9">{
         switch status </span>{
-        case newStatus:<span class="cov0" title="0">
+        case pgordersqry.OrdersOrderStatusNew:<span class="cov0" title="0">
                 return models.NewStatus</span>
-        case awaitingPaymentStatus:<span class="cov6" title="5">
+        case pgordersqry.OrdersOrderStatusAwaitingPayment:<span class="cov6" title="5">
                 return models.AwaitingPaymentStatus</span>
-        case payedStatus:<span class="cov3" title="2">
+        case pgordersqry.OrdersOrderStatusPayed:<span class="cov3" title="2">
                 return models.PayedStatus</span>
-        case cancelledStatus:<span class="cov3" title="2">
+        case pgordersqry.OrdersOrderStatusCancelled:<span class="cov3" title="2">
                 return models.CancelledStatus</span>
-        case failedStatus:<span class="cov0" title="0">
+        case pgordersqry.OrdersOrderStatusFailed:<span class="cov0" title="0">
                 return models.FailedStatus</span>
         default:<span class="cov0" title="0">
                 return models.UnknownStatus</span>
         }
 }
 
-func orderToDTO(order models.Order) orderDTO <span class="cov5" title="4">{
-        return orderDTO{
-                UserID:    order.UserID,
-                Status:    statusToDTO(order.Status),
-                CreatedAt: time.Now(),
-                UpdatedAt: time.Now(),
+func orderToDTO(order models.Order) pgordersqry.OrdersOrder <span class="cov5" title="4">{
+        return pgordersqry.OrdersOrder{
+                UserID: order.UserID,
+                Status: statusToDTO(order.Status),
+                CreatedAt: pgtype.Timestamp{
+                        Time:  time.Now(),
+                        Valid: true,
+                },
+                UpdatedAt: pgtype.Timestamp{
+                        Time:  time.Now(),
+                        Valid: true,
+                },
         }
 }</span>
 
-func orderToDomain(order orderDTO, items []itemDTO) models.Order <span class="cov8" title="9">{
+func orderToDomain(order pgordersqry.GetOrderByIdRow, items []pgordersqry.GetOrderItemsRow) models.Order <span class="cov8" title="9">{
         return models.Order{
                 UserID: order.UserID,
                 Items:  itemsToDomain(items),
@@ -271,29 +269,35 @@ func orderToDomain(order orderDTO, items []itemDTO) models.Order <span class="co
         }
 }</span>
 
-func itemsToDTO(orderID int64, items []models.Item) []itemDTO <span class="cov5" title="4">{
-        itemsDTO := make([]itemDTO, 0, len(items))
+func itemsToDTO(orderID int64, items []models.Item) []pgordersqry.InsertOrderItemsParams <span class="cov5" title="4">{
+        itemsDTO := make([]pgordersqry.InsertOrderItemsParams, 0, len(items))
 
         for _, item := range items </span><span class="cov6" title="5">{
-                itemsDTO = append(itemsDTO, itemDTO{
-                        SKU:       item.SKUid,
-                        OrderID:   orderID,
-                        Count:     item.Count,
-                        CreatedAt: time.Now(),
-                        UpdatedAt: time.Now(),
+                itemsDTO = append(itemsDTO, pgordersqry.InsertOrderItemsParams{
+                        SkuID:   int64(item.SKUid),
+                        OrderID: orderID,
+                        Count:   int64(item.Count),
+                        CreatedAt: pgtype.Timestamp{
+                                Time:  time.Now(),
+                                Valid: true,
+                        },
+                        UpdatedAt: pgtype.Timestamp{
+                                Time:  time.Now(),
+                                Valid: true,
+                        },
                 })
         }</span>
 
         <span class="cov5" title="4">return itemsDTO</span>
 }
 
-func itemsToDomain(itemsDTO []itemDTO) []models.Item <span class="cov8" title="9">{
+func itemsToDomain(itemsDTO []pgordersqry.GetOrderItemsRow) []models.Item <span class="cov8" title="9">{
         items := make([]models.Item, 0, len(itemsDTO))
 
         for _, item := range itemsDTO </span><span class="cov10" title="15">{
                 items = append(items, models.Item{
-                        SKUid: item.SKU,
-                        Count: item.Count,
+                        SKUid: uint32(item.SkuID),
+                        Count: uint32(item.Count),
                 })
         }</span>
 
@@ -301,7 +305,272 @@ func itemsToDomain(itemsDTO []itemDTO) []models.Item <span class="cov8" title="9
 }
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package pgorders
+		<pre class="file" id="file2" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+// source: copyfrom.go
+
+package pgordersqry
+
+import (
+        "context"
+)
+
+// iteratorForInsertOrderItems implements pgx.CopyFromSource.
+type iteratorForInsertOrderItems struct {
+        rows                 []InsertOrderItemsParams
+        skippedFirstNextCall bool
+}
+
+func (r *iteratorForInsertOrderItems) Next() bool <span class="cov10" title="9">{
+        if len(r.rows) == 0 </span><span class="cov0" title="0">{
+                return false
+        }</span>
+        <span class="cov10" title="9">if !r.skippedFirstNextCall </span><span class="cov6" title="4">{
+                r.skippedFirstNextCall = true
+                return true
+        }</span>
+        <span class="cov7" title="5">r.rows = r.rows[1:]
+        return len(r.rows) &gt; 0</span>
+}
+
+func (r iteratorForInsertOrderItems) Values() ([]interface{}, error) <span class="cov7" title="5">{
+        return []interface{}{
+                r.rows[0].SkuID,
+                r.rows[0].OrderID,
+                r.rows[0].Count,
+                r.rows[0].CreatedAt,
+                r.rows[0].UpdatedAt,
+        }, nil
+}</span>
+
+func (r iteratorForInsertOrderItems) Err() error <span class="cov6" title="4">{
+        return nil
+}</span>
+
+func (q *Queries) InsertOrderItems(ctx context.Context, arg []InsertOrderItemsParams) (int64, error) <span class="cov6" title="4">{
+        return q.db.CopyFrom(ctx, []string{"orders", "order_items"}, []string{"sku_id", "order_id", "count", "created_at", "updated_at"}, &amp;iteratorForInsertOrderItems{rows: arg})
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+
+package pgordersqry
+
+import (
+        "context"
+
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgconn"
+)
+
+type DBTX interface {
+        Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+        Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+        QueryRow(context.Context, string, ...interface{}) pgx.Row
+        CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
+}
+
+func New(db DBTX) *Queries <span class="cov1" title="1">{
+        return &amp;Queries{db: db}
+}</span>
+
+type Queries struct {
+        db DBTX
+}
+
+func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov10" title="4">{
+        return &amp;Queries{
+                db: tx,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+
+package pgordersqry
+
+import (
+        "database/sql/driver"
+        "fmt"
+
+        "github.com/jackc/pgx/v5/pgtype"
+)
+
+type OrdersOrderStatus string
+
+const (
+        OrdersOrderStatusUnknown         OrdersOrderStatus = "Unknown"
+        OrdersOrderStatusNew             OrdersOrderStatus = "New"
+        OrdersOrderStatusAwaitingPayment OrdersOrderStatus = "AwaitingPayment"
+        OrdersOrderStatusPayed           OrdersOrderStatus = "Payed"
+        OrdersOrderStatusCancelled       OrdersOrderStatus = "Cancelled"
+        OrdersOrderStatusFailed          OrdersOrderStatus = "Failed"
+)
+
+func (e *OrdersOrderStatus) Scan(src interface{}) error <span class="cov10" title="9">{
+        switch s := src.(type) </span>{
+        case []byte:<span class="cov0" title="0">
+                *e = OrdersOrderStatus(s)</span>
+        case string:<span class="cov10" title="9">
+                *e = OrdersOrderStatus(s)</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("unsupported scan type for OrdersOrderStatus: %T", src)</span>
+        }
+        <span class="cov10" title="9">return nil</span>
+}
+
+type NullOrdersOrderStatus struct {
+        OrdersOrderStatus OrdersOrderStatus
+        Valid             bool // Valid is true if OrdersOrderStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrdersOrderStatus) Scan(value interface{}) error <span class="cov0" title="0">{
+        if value == nil </span><span class="cov0" title="0">{
+                ns.OrdersOrderStatus, ns.Valid = "", false
+                return nil
+        }</span>
+        <span class="cov0" title="0">ns.Valid = true
+        return ns.OrdersOrderStatus.Scan(value)</span>
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrdersOrderStatus) Value() (driver.Value, error) <span class="cov0" title="0">{
+        if !ns.Valid </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+        <span class="cov0" title="0">return string(ns.OrdersOrderStatus), nil</span>
+}
+
+type OrdersOrder struct {
+        ID        int64
+        UserID    int64
+        Status    OrdersOrderStatus
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+
+type OrdersOrderItem struct {
+        SkuID     int64
+        OrderID   int64
+        Count     int64
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+
+type StocksStock struct {
+        ID        int64
+        Available int64
+        Reserved  int64
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+// source: queries.sql
+
+package pgordersqry
+
+import (
+        "context"
+
+        "github.com/jackc/pgx/v5/pgtype"
+)
+
+const createOrder = `-- name: CreateOrder :one
+INSERT INTO orders.orders (user_id, status, created_at, updated_at)
+VALUES ($1, $2, $3, $4)
+RETURNING id
+`
+
+type CreateOrderParams struct {
+        UserID    int64
+        Status    OrdersOrderStatus
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+
+func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (int64, error) <span class="cov5" title="4">{
+        row := q.db.QueryRow(ctx, createOrder,
+                arg.UserID,
+                arg.Status,
+                arg.CreatedAt,
+                arg.UpdatedAt,
+        )
+        var id int64
+        err := row.Scan(&amp;id)
+        return id, err
+}</span>
+
+const getOrderById = `-- name: GetOrderById :one
+SELECT id, user_id, status
+FROM orders.orders
+WHERE id = $1
+`
+
+type GetOrderByIdRow struct {
+        ID     int64
+        UserID int64
+        Status OrdersOrderStatus
+}
+
+func (q *Queries) GetOrderById(ctx context.Context, id int64) (GetOrderByIdRow, error) <span class="cov9" title="12">{
+        row := q.db.QueryRow(ctx, getOrderById, id)
+        var i GetOrderByIdRow
+        err := row.Scan(&amp;i.ID, &amp;i.UserID, &amp;i.Status)
+        return i, err
+}</span>
+
+const getOrderItems = `-- name: GetOrderItems :many
+SELECT sku_id, order_id, count
+FROM orders.order_items
+WHERE order_id = $1
+`
+
+type GetOrderItemsRow struct {
+        SkuID   int64
+        OrderID int64
+        Count   int64
+}
+
+func (q *Queries) GetOrderItems(ctx context.Context, orderID int64) ([]GetOrderItemsRow, error) <span class="cov8" title="9">{
+        rows, err := q.db.Query(ctx, getOrderItems, orderID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="9">defer rows.Close()
+        var items []GetOrderItemsRow
+        for rows.Next() </span><span class="cov10" title="15">{
+                var i GetOrderItemsRow
+                if err := rows.Scan(&amp;i.SkuID, &amp;i.OrderID, &amp;i.Count); err != nil </span><span class="cov0" title="0">{
+                        return nil, err
+                }</span>
+                <span class="cov10" title="15">items = append(items, i)</span>
+        }
+        <span class="cov8" title="9">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="9">return items, nil</span>
+}
+
+type InsertOrderItemsParams struct {
+        SkuID     int64
+        OrderID   int64
+        Count     int64
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package pgorders
 
 import (
         "context"
@@ -310,6 +579,7 @@ import (
         "time"
 
         "route256/loms/config"
+        "route256/loms/internal/loms/adapters/pgorders/pgordersqry"
         "route256/loms/internal/loms/models"
         "route256/loms/pkg/pgconnect"
 
@@ -320,7 +590,8 @@ import (
 )
 
 type OrdersRepo struct {
-        Pool *pgxpool.Pool
+        Pool    *pgxpool.Pool
+        queries *pgordersqry.Queries
 }
 
 func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (*OrdersRepo, error) <span class="cov1" title="1">{
@@ -336,15 +607,13 @@ func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (
                 return nil, err
         }</span>
 
-        <span class="cov1" title="1">return &amp;OrdersRepo{Pool: pool}, nil</span>
+        <span class="cov1" title="1">return &amp;OrdersRepo{
+                Pool:    pool,
+                queries: pgordersqry.New(pool),
+        }, nil</span>
 }
 
 func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, error) <span class="cov6" title="4">{
-        qry := `INSERT INTO orders.orders (user_id, status, created_at, updated_at)
-                                VALUES ($1, $2, $3, $4)
-                                RETURNING id;`
-        var orderID int64
-
         orderData := orderToDTO(order)
 
         tx, err := or.Pool.Begin(ctx)
@@ -359,17 +628,22 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
                 }
         }()
 
-        <span class="cov6" title="4">if err = tx.QueryRow(ctx, qry, orderData.UserID, orderData.Status, orderData.CreatedAt, orderData.UpdatedAt).Scan(&amp;orderID); err != nil </span><span class="cov0" title="0">{
+        <span class="cov6" title="4">qtx := or.queries.WithTx(tx)
+
+        orderID, err := qtx.CreateOrder(ctx, pgordersqry.CreateOrderParams{
+                UserID:    orderData.UserID,
+                Status:    orderData.Status,
+                CreatedAt: orderData.CreatedAt,
+                UpdatedAt: orderData.UpdatedAt,
+        })
+        if err != nil </span><span class="cov0" title="0">{
                 return 0, fmt.Errorf("query fail: %w", err)
         }</span>
 
         <span class="cov6" title="4">itemsData := itemsToDTO(orderID, order.Items)
 
-        _, err = tx.CopyFrom(ctx, pgx.Identifier{"orders", "order_items"}, []string{"sku_id", "order_id", "count", "created_at", "updated_at"},
-                pgx.CopyFromSlice(len(itemsData), func(i int) ([]any, error) </span><span class="cov6" title="5">{
-                        return []any{itemsData[i].SKU, itemsData[i].OrderID, itemsData[i].Count, itemsData[i].CreatedAt, itemsData[i].UpdatedAt}, nil
-                }</span>))
-        <span class="cov6" title="4">if err != nil </span><span class="cov0" title="0">{
+        _, err = qtx.InsertOrderItems(ctx, itemsData)
+        if err != nil </span><span class="cov0" title="0">{
                 return 0, fmt.Errorf("query fail: %w", err)
         }</span>
 
@@ -385,11 +659,11 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
                                 SET status=$1, updated_at=$2
                                 WHERE id=$3`
 
+        // sqlc не умеет возвращать commandTag (нужен для обработки ошибки)
         tag, err := or.Pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
         if err != nil </span><span class="cov0" title="0">{
                 return err
         }</span>
-
         <span class="cov8" title="7">if tag.RowsAffected() == 0 </span><span class="cov0" title="0">{
                 return models.ErrOrderNotFound
         }</span>
@@ -398,20 +672,7 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 }
 
 func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) <span class="cov10" title="12">{
-        orderQry := `SELECT id, user_id, status
-                                        FROM orders.orders
-                                        WHERE id=$1`
-        itemsQry := `SELECT sku_id, order_id, count
-                                        FROM orders.order_items
-                                        WHERE order_id=$1`
-
-        orderRows, err := or.Pool.Query(ctx, orderQry, orderID)
-        if err != nil </span><span class="cov0" title="0">{
-                return models.Order{}, err
-        }</span>
-        <span class="cov10" title="12">defer orderRows.Close()
-
-        oderData, err := pgx.CollectOneRow(orderRows, pgx.RowToStructByName[orderDTO])
+        oderData, err := or.queries.GetOrderById(ctx, orderID)
         if err != nil </span><span class="cov4" title="3">{
                 if errors.Is(err, pgx.ErrNoRows) </span><span class="cov4" title="3">{
                         return models.Order{}, models.ErrOrderNotFound
@@ -419,13 +680,7 @@ func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.O
                 <span class="cov0" title="0">return models.Order{}, err</span>
         }
 
-        <span class="cov8" title="9">itemRows, err := or.Pool.Query(ctx, itemsQry, orderID)
-        if err != nil </span><span class="cov0" title="0">{
-                return models.Order{}, err
-        }</span>
-        <span class="cov8" title="9">defer itemRows.Close()
-
-        itemsData, err := pgx.CollectRows(itemRows, pgx.RowToStructByName[itemDTO])
+        <span class="cov8" title="9">itemsData, err := or.queries.GetOrderItems(ctx, orderID)
         if err != nil </span><span class="cov0" title="0">{
                 return models.Order{}, err
         }</span>
@@ -439,13 +694,229 @@ func (or *OrdersRepo) Close() error <span class="cov1" title="1">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package pgstocks
+		<pre class="file" id="file7" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+
+package pgstocksqry
+
+import (
+        "context"
+
+        "github.com/jackc/pgx/v5"
+        "github.com/jackc/pgx/v5/pgconn"
+)
+
+type DBTX interface {
+        Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+        Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+        QueryRow(context.Context, string, ...interface{}) pgx.Row
+}
+
+func New(db DBTX) *Queries <span class="cov1" title="1">{
+        return &amp;Queries{db: db}
+}</span>
+
+type Queries struct {
+        db DBTX
+}
+
+func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov10" title="7">{
+        return &amp;Queries{
+                db: tx,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+
+package pgstocksqry
+
+import (
+        "database/sql/driver"
+        "fmt"
+
+        "github.com/jackc/pgx/v5/pgtype"
+)
+
+type OrdersOrderStatus string
+
+const (
+        OrdersOrderStatusUnknown         OrdersOrderStatus = "Unknown"
+        OrdersOrderStatusNew             OrdersOrderStatus = "New"
+        OrdersOrderStatusAwaitingPayment OrdersOrderStatus = "AwaitingPayment"
+        OrdersOrderStatusPayed           OrdersOrderStatus = "Payed"
+        OrdersOrderStatusCancelled       OrdersOrderStatus = "Cancelled"
+        OrdersOrderStatusFailed          OrdersOrderStatus = "Failed"
+)
+
+func (e *OrdersOrderStatus) Scan(src interface{}) error <span class="cov0" title="0">{
+        switch s := src.(type) </span>{
+        case []byte:<span class="cov0" title="0">
+                *e = OrdersOrderStatus(s)</span>
+        case string:<span class="cov0" title="0">
+                *e = OrdersOrderStatus(s)</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("unsupported scan type for OrdersOrderStatus: %T", src)</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+type NullOrdersOrderStatus struct {
+        OrdersOrderStatus OrdersOrderStatus
+        Valid             bool // Valid is true if OrdersOrderStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrdersOrderStatus) Scan(value interface{}) error <span class="cov0" title="0">{
+        if value == nil </span><span class="cov0" title="0">{
+                ns.OrdersOrderStatus, ns.Valid = "", false
+                return nil
+        }</span>
+        <span class="cov0" title="0">ns.Valid = true
+        return ns.OrdersOrderStatus.Scan(value)</span>
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrdersOrderStatus) Value() (driver.Value, error) <span class="cov0" title="0">{
+        if !ns.Valid </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+        <span class="cov0" title="0">return string(ns.OrdersOrderStatus), nil</span>
+}
+
+type OrdersOrder struct {
+        ID        int64
+        UserID    int64
+        Status    OrdersOrderStatus
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+
+type OrdersOrderItem struct {
+        SkuID     int64
+        OrderID   int64
+        Count     int64
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+
+type StocksStock struct {
+        ID        int64
+        Available int64
+        Reserved  int64
+        CreatedAt pgtype.Timestamp
+        UpdatedAt pgtype.Timestamp
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">// Code generated by sqlc. DO NOT EDIT.
+// versions:
+//   sqlc v1.26.0
+// source: queries.sql
+
+package pgstocksqry
+
+import (
+        "context"
+)
+
+const cancelReservation = `-- name: CancelReservation :exec
+UPDATE stocks.stocks
+SET reserved = reserved - $1
+WHERE id = $2
+`
+
+type CancelReservationParams struct {
+        Reserved int64
+        ID       int64
+}
+
+func (q *Queries) CancelReservation(ctx context.Context, arg CancelReservationParams) error <span class="cov6" title="4">{
+        _, err := q.db.Exec(ctx, cancelReservation, arg.Reserved, arg.ID)
+        return err
+}</span>
+
+const getStockBySKU = `-- name: GetStockBySKU :one
+SELECT available, reserved
+FROM stocks.stocks
+WHERE id = $1
+`
+
+type GetStockBySKURow struct {
+        Available int64
+        Reserved  int64
+}
+
+func (q *Queries) GetStockBySKU(ctx context.Context, id int64) (GetStockBySKURow, error) <span class="cov9" title="8">{
+        row := q.db.QueryRow(ctx, getStockBySKU, id)
+        var i GetStockBySKURow
+        err := row.Scan(&amp;i.Available, &amp;i.Reserved)
+        return i, err
+}</span>
+
+const removePayedReservation = `-- name: RemovePayedReservation :exec
+UPDATE stocks.stocks
+SET available = available - $1,
+    reserved = reserved - $1
+WHERE id = $2
+`
+
+type RemovePayedReservationParams struct {
+        Available int64
+        ID        int64
+}
+
+func (q *Queries) RemovePayedReservation(ctx context.Context, arg RemovePayedReservationParams) error <span class="cov1" title="1">{
+        _, err := q.db.Exec(ctx, removePayedReservation, arg.Available, arg.ID)
+        return err
+}</span>
+
+const reserveStocks = `-- name: ReserveStocks :exec
+UPDATE stocks.stocks
+SET reserved = reserved + $1
+WHERE id = $2
+`
+
+type ReserveStocksParams struct {
+        Reserved int64
+        ID       int64
+}
+
+func (q *Queries) ReserveStocks(ctx context.Context, arg ReserveStocksParams) error <span class="cov5" title="3">{
+        _, err := q.db.Exec(ctx, reserveStocks, arg.Reserved, arg.ID)
+        return err
+}</span>
+
+const retrieveStockForUpdate = `-- name: RetrieveStockForUpdate :one
+SELECT available, reserved
+FROM stocks.stocks
+WHERE id = $1 FOR UPDATE
+`
+
+type RetrieveStockForUpdateRow struct {
+        Available int64
+        Reserved  int64
+}
+
+func (q *Queries) RetrieveStockForUpdate(ctx context.Context, id int64) (RetrieveStockForUpdateRow, error) <span class="cov10" title="10">{
+        row := q.db.QueryRow(ctx, retrieveStockForUpdate, id)
+        var i RetrieveStockForUpdateRow
+        err := row.Scan(&amp;i.Available, &amp;i.Reserved)
+        return i, err
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package pgstocks
 
 import (
         "errors"
         "fmt"
 
         "route256/loms/config"
+        "route256/loms/internal/loms/adapters/pgstocks/pgstocksqry"
         "route256/loms/internal/loms/models"
         "route256/loms/pkg/pgconnect"
 
@@ -457,7 +928,8 @@ import (
 )
 
 type StocksRepo struct {
-        Pool *pgxpool.Pool
+        Pool    *pgxpool.Pool
+        queries *pgstocksqry.Queries
 }
 
 func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (*StocksRepo, error) <span class="cov1" title="1">{
@@ -473,18 +945,13 @@ func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (
                 return nil, err
         }</span>
 
-        <span class="cov1" title="1">return &amp;StocksRepo{Pool: pool}, nil</span>
+        <span class="cov1" title="1">return &amp;StocksRepo{
+                Pool:    pool,
+                queries: pgstocksqry.New(pool),
+        }, nil</span>
 }
 
 func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <span class="cov7" title="4">{
-        //nolint:goconst //Запросы держать рядом с их вызовом
-        retrieveQry := `SELECT available, reserved
-                                                FROM stocks.stocks
-                                                WHERE id = $1 FOR UPDATE`
-        updateQry := `UPDATE stocks.stocks
-                                        SET reserved = reserved + $1
-                                        WHERE id = $2`
-
         tx, err := s.Pool.Begin(ctx)
         if err != nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("connection acquire fail: %w", err)
@@ -497,9 +964,12 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <spa
                 }
         }()
 
-        <span class="cov7" title="4">for _, item := range order.Items </span><span class="cov7" title="5">{
-                var available, reserved int64
-                if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov1" title="1">{
+        <span class="cov7" title="4">qtx := s.queries.WithTx(tx)
+
+        for _, item := range order.Items </span><span class="cov7" title="5">{
+                var stocksData pgstocksqry.RetrieveStockForUpdateRow
+                stocksData, err = qtx.RetrieveStockForUpdate(ctx, int64(item.SKUid))
+                if err != nil </span><span class="cov1" title="1">{
                         if errors.Is(err, pgx.ErrNoRows) </span><span class="cov1" title="1">{
                                 return models.ErrItemNotFound
                         }</span>
@@ -507,12 +977,15 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <spa
                 }
 
                 <span class="cov7" title="4">toReserve := int64(item.Count)
-                if available &lt; reserved+toReserve </span><span class="cov1" title="1">{
+                if stocksData.Available &lt; stocksData.Reserved+toReserve </span><span class="cov1" title="1">{
                         err = models.ErrInsufficientStock
                         return err
                 }</span>
 
-                <span class="cov5" title="3">_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+                <span class="cov5" title="3">err = qtx.ReserveStocks(ctx, pgstocksqry.ReserveStocksParams{
+                        Reserved: toReserve,
+                        ID:       int64(item.SKUid),
+                })
                 if err != nil </span><span class="cov0" title="0">{
                         return err
                 }</span>
@@ -526,14 +999,6 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <spa
 }
 
 func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) error <span class="cov1" title="1">{
-        retrieveQry := `SELECT available, reserved
-                                                FROM stocks.stocks
-                                                WHERE id = $1 FOR UPDATE`
-        updateQry := `UPDATE stocks.stocks
-                                        SET available = available - $1,
-                                            reserved = reserved - $1
-                                        WHERE id = $2`
-
         tx, err := s.Pool.Begin(ctx)
         if err != nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("connection acquire fail: %w", err)
@@ -546,9 +1011,12 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
                 }
         }()
 
-        <span class="cov1" title="1">for _, item := range order.Items </span><span class="cov1" title="1">{
-                var available, reserved int64
-                if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov0" title="0">{
+        <span class="cov1" title="1">qtx := s.queries.WithTx(tx)
+
+        for _, item := range order.Items </span><span class="cov1" title="1">{
+                var stocksData pgstocksqry.RetrieveStockForUpdateRow
+                stocksData, err = qtx.RetrieveStockForUpdate(ctx, int64(item.SKUid))
+                if err != nil </span><span class="cov0" title="0">{
                         if errors.Is(err, pgx.ErrNoRows) </span><span class="cov0" title="0">{
                                 return models.ErrItemNotFound
                         }</span>
@@ -556,12 +1024,15 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
                 }
 
                 <span class="cov1" title="1">toReserve := int64(item.Count)
-                if reserved &lt; toReserve </span><span class="cov0" title="0">{
+                if stocksData.Reserved &lt; toReserve </span><span class="cov0" title="0">{
                         err = models.ErrReservationConflict
                         return err
                 }</span>
 
-                <span class="cov1" title="1">_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+                <span class="cov1" title="1">err = qtx.RemovePayedReservation(ctx, pgstocksqry.RemovePayedReservationParams{
+                        Available: toReserve,
+                        ID:        int64(item.SKUid),
+                })
                 if err != nil </span><span class="cov0" title="0">{
                         return err
                 }</span>
@@ -575,13 +1046,6 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) error <span class="cov4" title="2">{
-        retrieveQry := `SELECT available, reserved
-                                                FROM stocks.stocks
-                                                WHERE id = $1 FOR UPDATE`
-        updateQry := `UPDATE stocks.stocks
-                                        SET reserved = reserved - $1
-                                        WHERE id = $2`
-
         tx, err := s.Pool.Begin(ctx)
         if err != nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("connection acquire fail: %w", err)
@@ -594,9 +1058,12 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
                 }
         }()
 
-        <span class="cov4" title="2">for _, item := range order.Items </span><span class="cov7" title="4">{
-                var available, reserved int64
-                if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov0" title="0">{
+        <span class="cov4" title="2">qtx := s.queries.WithTx(tx)
+
+        for _, item := range order.Items </span><span class="cov7" title="4">{
+                var stocksData pgstocksqry.RetrieveStockForUpdateRow
+                stocksData, err = qtx.RetrieveStockForUpdate(ctx, int64(item.SKUid))
+                if err != nil </span><span class="cov0" title="0">{
                         if errors.Is(err, pgx.ErrNoRows) </span><span class="cov0" title="0">{
                                 return models.ErrItemNotFound
                         }</span>
@@ -604,12 +1071,15 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
                 }
 
                 <span class="cov7" title="4">toReserve := int64(item.Count)
-                if reserved &lt; toReserve </span><span class="cov0" title="0">{
+                if stocksData.Reserved &lt; toReserve </span><span class="cov0" title="0">{
                         err = models.ErrReservationConflict
                         return err
                 }</span>
 
-                <span class="cov7" title="4">_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+                <span class="cov7" title="4">err = qtx.CancelReservation(ctx, pgstocksqry.CancelReservationParams{
+                        Reserved: toReserve,
+                        ID:       int64(item.SKUid),
+                })
                 if err != nil </span><span class="cov0" title="0">{
                         return err
                 }</span>
@@ -623,23 +1093,19 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) <span class="cov10" title="8">{
-        retrieveQry := `SELECT available, reserved
-                                                FROM stocks.stocks
-                                                WHERE id = $1`
-
-        var available, reserved int64
-        if err := s.Pool.QueryRow(ctx, retrieveQry, skuID).Scan(&amp;available, &amp;reserved); err != nil </span><span class="cov1" title="1">{
+        stocksData, err := s.queries.GetStockBySKU(ctx, int64(skuID))
+        if err != nil </span><span class="cov1" title="1">{
                 if errors.Is(err, pgx.ErrNoRows) </span><span class="cov1" title="1">{
                         return 0, models.ErrItemNotFound
                 }</span>
                 <span class="cov0" title="0">return 0, err</span>
         }
 
-        <span class="cov9" title="7">return available - reserved, nil</span>
+        <span class="cov9" title="7">return stocksData.Available - stocksData.Reserved, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package stocksmem
+		<pre class="file" id="file11" style="display: none">package stocksmem
 
 import (
         "context"
@@ -823,7 +1289,7 @@ func (s *Stocks) uploadStockData() error <span class="cov0" title="0">{
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package impl
+		<pre class="file" id="file12" style="display: none">package impl
 
 import (
         "route256/loms/internal/loms/models"
@@ -886,7 +1352,7 @@ func StatusToProto(status models.OrderStatus) lomsservicev1.Status <span class="
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package impl
+		<pre class="file" id="file13" style="display: none">package impl
 
 import (
         "errors"
@@ -915,7 +1381,7 @@ func mapError(err error) error <span class="cov10" title="21">{
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package impl
+		<pre class="file" id="file14" style="display: none">package impl
 
 import (
         "context"
@@ -1003,7 +1469,7 @@ func (i *Impl) StocksInfo(ctx context.Context, req *lomsservicev1.StocksInfoRequ
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package interceptors
+		<pre class="file" id="file15" style="display: none">package interceptors
 
 import (
         "context"
@@ -1089,7 +1555,7 @@ func logResponse(logger zerolog.Logger, timeTaken time.Duration, resp any, info 
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package interceptors
+		<pre class="file" id="file16" style="display: none">package interceptors
 
 import (
         "context"
@@ -1115,7 +1581,7 @@ func RecoverPanic(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package interceptors
+		<pre class="file" id="file17" style="display: none">package interceptors
 
 import (
         "context"
@@ -1139,7 +1605,7 @@ func Validate(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grp
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package ggrpc
+		<pre class="file" id="file18" style="display: none">package ggrpc
 
 import (
         "route256/loms/config"
@@ -1180,7 +1646,7 @@ func buildOptions(log zerolog.Logger) []grpc.ServerOption <span class="cov8" tit
 }</span>
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package httpgate
+		<pre class="file" id="file19" style="display: none">package httpgate
 
 import (
         "context"
@@ -1232,7 +1698,7 @@ func customErr(w http.ResponseWriter, code int, msg string) <span class="cov0" t
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package httpgate
+		<pre class="file" id="file20" style="display: none">package httpgate
 
 import (
         "context"
@@ -1278,7 +1744,7 @@ func New(ctx context.Context, cfg config.HTTPGateCfg) (*http.Server, error) <spa
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package resources
+		<pre class="file" id="file21" style="display: none">package resources
 
 import (
         "context"
@@ -1337,7 +1803,7 @@ func (r Resources) Stop() <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package loms
+		<pre class="file" id="file22" style="display: none">package loms
 
 import (
         "context"
@@ -1412,7 +1878,7 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package usecase
+		<pre class="file" id="file23" style="display: none">package usecase
 
 import (
         "context"

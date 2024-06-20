@@ -3,78 +3,62 @@ package pgorders
 import (
 	"time"
 
+	"route256/loms/internal/loms/adapters/pgorders/pgordersqry"
 	"route256/loms/internal/loms/models"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const (
-	unknownStatus         string = "Unknown"
-	newStatus             string = "New"
-	awaitingPaymentStatus string = "AwaitingPayment"
-	payedStatus           string = "Payed"
-	cancelledStatus       string = "Cancelled"
-	failedStatus          string = "Failed"
-)
-
-type orderDTO struct {
-	ID        int64     `db:"id"`
-	UserID    int64     `db:"user_id"`
-	Status    string    `db:"status"`
-	CreatedAt time.Time `db:"-"`
-	UpdatedAt time.Time `db:"-"`
-}
-
-type itemDTO struct {
-	SKU       uint32    `db:"sku_id"`
-	OrderID   int64     `db:"order_id"`
-	Count     uint32    `db:"count"`
-	CreatedAt time.Time `db:"-"`
-	UpdatedAt time.Time `db:"-"`
-}
-
-func statusToDTO(status models.OrderStatus) string {
+func statusToDTO(status models.OrderStatus) pgordersqry.OrdersOrderStatus {
 	switch status {
 	case models.NewStatus:
-		return newStatus
+		return pgordersqry.OrdersOrderStatusNew
 	case models.AwaitingPaymentStatus:
-		return awaitingPaymentStatus
+		return pgordersqry.OrdersOrderStatusAwaitingPayment
 	case models.PayedStatus:
-		return payedStatus
+		return pgordersqry.OrdersOrderStatusPayed
 	case models.CancelledStatus:
-		return cancelledStatus
+		return pgordersqry.OrdersOrderStatusCancelled
 	case models.FailedStatus:
-		return failedStatus
+		return pgordersqry.OrdersOrderStatusFailed
 	default:
-		return unknownStatus
+		return pgordersqry.OrdersOrderStatusUnknown
 	}
 }
 
-func statusToDomain(status string) models.OrderStatus {
+func statusToDomain(status pgordersqry.OrdersOrderStatus) models.OrderStatus {
 	switch status {
-	case newStatus:
+	case pgordersqry.OrdersOrderStatusNew:
 		return models.NewStatus
-	case awaitingPaymentStatus:
+	case pgordersqry.OrdersOrderStatusAwaitingPayment:
 		return models.AwaitingPaymentStatus
-	case payedStatus:
+	case pgordersqry.OrdersOrderStatusPayed:
 		return models.PayedStatus
-	case cancelledStatus:
+	case pgordersqry.OrdersOrderStatusCancelled:
 		return models.CancelledStatus
-	case failedStatus:
+	case pgordersqry.OrdersOrderStatusFailed:
 		return models.FailedStatus
 	default:
 		return models.UnknownStatus
 	}
 }
 
-func orderToDTO(order models.Order) orderDTO {
-	return orderDTO{
-		UserID:    order.UserID,
-		Status:    statusToDTO(order.Status),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+func orderToDTO(order models.Order) pgordersqry.OrdersOrder {
+	return pgordersqry.OrdersOrder{
+		UserID: order.UserID,
+		Status: statusToDTO(order.Status),
+		CreatedAt: pgtype.Timestamp{
+			Time:  time.Now(),
+			Valid: true,
+		},
+		UpdatedAt: pgtype.Timestamp{
+			Time:  time.Now(),
+			Valid: true,
+		},
 	}
 }
 
-func orderToDomain(order orderDTO, items []itemDTO) models.Order {
+func orderToDomain(order pgordersqry.GetOrderByIdRow, items []pgordersqry.GetOrderItemsRow) models.Order {
 	return models.Order{
 		UserID: order.UserID,
 		Items:  itemsToDomain(items),
@@ -82,29 +66,35 @@ func orderToDomain(order orderDTO, items []itemDTO) models.Order {
 	}
 }
 
-func itemsToDTO(orderID int64, items []models.Item) []itemDTO {
-	itemsDTO := make([]itemDTO, 0, len(items))
+func itemsToDTO(orderID int64, items []models.Item) []pgordersqry.InsertOrderItemsParams {
+	itemsDTO := make([]pgordersqry.InsertOrderItemsParams, 0, len(items))
 
 	for _, item := range items {
-		itemsDTO = append(itemsDTO, itemDTO{
-			SKU:       item.SKUid,
-			OrderID:   orderID,
-			Count:     item.Count,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+		itemsDTO = append(itemsDTO, pgordersqry.InsertOrderItemsParams{
+			SkuID:   int64(item.SKUid),
+			OrderID: orderID,
+			Count:   int64(item.Count),
+			CreatedAt: pgtype.Timestamp{
+				Time:  time.Now(),
+				Valid: true,
+			},
+			UpdatedAt: pgtype.Timestamp{
+				Time:  time.Now(),
+				Valid: true,
+			},
 		})
 	}
 
 	return itemsDTO
 }
 
-func itemsToDomain(itemsDTO []itemDTO) []models.Item {
+func itemsToDomain(itemsDTO []pgordersqry.GetOrderItemsRow) []models.Item {
 	items := make([]models.Item, 0, len(itemsDTO))
 
 	for _, item := range itemsDTO {
 		items = append(items, models.Item{
-			SKUid: item.SKU,
-			Count: item.Count,
+			SKUid: uint32(item.SkuID),
+			Count: uint32(item.Count),
 		})
 	}
 

@@ -1,0 +1,18 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    schema: "./migrations" 
+    queries: "./internal/loms/adapters/pgorders/queries.sql"
+    gen:
+      go:
+        package: "pgordersqry"
+        sql_package: "pgx/v5"
+        out: "./internal/loms/adapters/pgorders/pgordersqry"
+  - engine: "postgresql"
+    schema: "./migrations"
+    queries: "./internal/loms/adapters/pgstocks/queries.sql"
+    gen:
+      go:
+        package: "pgstocksqry"
+        sql_package: "pgx/v5"
+        out: "./internal/loms/adapters/pgstocks/pgstocksqry"

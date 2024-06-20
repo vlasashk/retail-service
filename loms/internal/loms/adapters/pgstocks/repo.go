@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"route256/loms/config"
+	"route256/loms/internal/loms/adapters/pgstocks/pgstocksqry"
 	"route256/loms/internal/loms/models"
 	"route256/loms/pkg/pgconnect"
 
@@ -16,7 +17,8 @@ import (
 )
 
 type StocksRepo struct {
-	Pool *pgxpool.Pool
+	Pool    *pgxpool.Pool
+	queries *pgstocksqry.Queries
 }
 
 func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (*StocksRepo, error) {
@@ -32,18 +34,13 @@ func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (
 		return nil, err
 	}
 
-	return &StocksRepo{Pool: pool}, nil
+	return &StocksRepo{
+		Pool:    pool,
+		queries: pgstocksqry.New(pool),
+	}, nil
 }
 
 func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
-	//nolint:goconst //Запросы держать рядом с их вызовом
-	retrieveQry := `SELECT available, reserved
-						FROM stocks.stocks
-						WHERE id = $1 FOR UPDATE`
-	updateQry := `UPDATE stocks.stocks
-					SET reserved = reserved + $1
-					WHERE id = $2`
-
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("connection acquire fail: %w", err)
@@ -56,9 +53,12 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
 		}
 	}()
 
+	qtx := s.queries.WithTx(tx)
+
 	for _, item := range order.Items {
-		var available, reserved int64
-		if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&available, &reserved); err != nil {
+		var stocksData pgstocksqry.RetrieveStockForUpdateRow
+		stocksData, err = qtx.RetrieveStockForUpdate(ctx, int64(item.SKUid))
+		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return models.ErrItemNotFound
 			}
@@ -66,12 +66,15 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
 		}
 
 		toReserve := int64(item.Count)
-		if available < reserved+toReserve {
+		if stocksData.Available < stocksData.Reserved+toReserve {
 			err = models.ErrInsufficientStock
 			return err
 		}
 
-		_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+		err = qtx.ReserveStocks(ctx, pgstocksqry.ReserveStocksParams{
+			Reserved: toReserve,
+			ID:       int64(item.SKUid),
+		})
 		if err != nil {
 			return err
 		}
@@ -85,14 +88,6 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
 }
 
 func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) error {
-	retrieveQry := `SELECT available, reserved
-						FROM stocks.stocks
-						WHERE id = $1 FOR UPDATE`
-	updateQry := `UPDATE stocks.stocks
-					SET available = available - $1,
-					    reserved = reserved - $1
-					WHERE id = $2`
-
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("connection acquire fail: %w", err)
@@ -105,9 +100,12 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 		}
 	}()
 
+	qtx := s.queries.WithTx(tx)
+
 	for _, item := range order.Items {
-		var available, reserved int64
-		if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&available, &reserved); err != nil {
+		var stocksData pgstocksqry.RetrieveStockForUpdateRow
+		stocksData, err = qtx.RetrieveStockForUpdate(ctx, int64(item.SKUid))
+		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return models.ErrItemNotFound
 			}
@@ -115,12 +113,15 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 		}
 
 		toReserve := int64(item.Count)
-		if reserved < toReserve {
+		if stocksData.Reserved < toReserve {
 			err = models.ErrReservationConflict
 			return err
 		}
 
-		_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+		err = qtx.RemovePayedReservation(ctx, pgstocksqry.RemovePayedReservationParams{
+			Available: toReserve,
+			ID:        int64(item.SKUid),
+		})
 		if err != nil {
 			return err
 		}
@@ -134,13 +135,6 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) error {
-	retrieveQry := `SELECT available, reserved
-						FROM stocks.stocks
-						WHERE id = $1 FOR UPDATE`
-	updateQry := `UPDATE stocks.stocks
-					SET reserved = reserved - $1
-					WHERE id = $2`
-
 	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("connection acquire fail: %w", err)
@@ -153,9 +147,12 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 		}
 	}()
 
+	qtx := s.queries.WithTx(tx)
+
 	for _, item := range order.Items {
-		var available, reserved int64
-		if err = tx.QueryRow(ctx, retrieveQry, item.SKUid).Scan(&available, &reserved); err != nil {
+		var stocksData pgstocksqry.RetrieveStockForUpdateRow
+		stocksData, err = qtx.RetrieveStockForUpdate(ctx, int64(item.SKUid))
+		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return models.ErrItemNotFound
 			}
@@ -163,12 +160,15 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 		}
 
 		toReserve := int64(item.Count)
-		if reserved < toReserve {
+		if stocksData.Reserved < toReserve {
 			err = models.ErrReservationConflict
 			return err
 		}
 
-		_, err = tx.Exec(ctx, updateQry, toReserve, item.SKUid)
+		err = qtx.CancelReservation(ctx, pgstocksqry.CancelReservationParams{
+			Reserved: toReserve,
+			ID:       int64(item.SKUid),
+		})
 		if err != nil {
 			return err
 		}
@@ -182,17 +182,13 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) {
-	retrieveQry := `SELECT available, reserved
-						FROM stocks.stocks
-						WHERE id = $1`
-
-	var available, reserved int64
-	if err := s.Pool.QueryRow(ctx, retrieveQry, skuID).Scan(&available, &reserved); err != nil {
+	stocksData, err := s.queries.GetStockBySKU(ctx, int64(skuID))
+	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, models.ErrItemNotFound
 		}
 		return 0, err
 	}
 
-	return available - reserved, nil
+	return stocksData.Available - stocksData.Reserved, nil
 }

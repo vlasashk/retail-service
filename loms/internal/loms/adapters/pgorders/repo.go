@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"route256/loms/config"
+	"route256/loms/internal/loms/adapters/pgorders/pgordersqry"
 	"route256/loms/internal/loms/models"
 	"route256/loms/pkg/pgconnect"
 
@@ -17,7 +18,8 @@ import (
 )
 
 type OrdersRepo struct {
-	Pool *pgxpool.Pool
+	Pool    *pgxpool.Pool
+	queries *pgordersqry.Queries
 }
 
 func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (*OrdersRepo, error) {
@@ -33,15 +35,13 @@ func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (
 		return nil, err
 	}
 
-	return &OrdersRepo{Pool: pool}, nil
+	return &OrdersRepo{
+		Pool:    pool,
+		queries: pgordersqry.New(pool),
+	}, nil
 }
 
 func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, error) {
-	qry := `INSERT INTO orders.orders (user_id, status, created_at, updated_at)
-				VALUES ($1, $2, $3, $4)
-				RETURNING id;`
-	var orderID int64
-
 	orderData := orderToDTO(order)
 
 	tx, err := or.Pool.Begin(ctx)
@@ -56,16 +56,21 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
 		}
 	}()
 
-	if err = tx.QueryRow(ctx, qry, orderData.UserID, orderData.Status, orderData.CreatedAt, orderData.UpdatedAt).Scan(&orderID); err != nil {
+	qtx := or.queries.WithTx(tx)
+
+	orderID, err := qtx.CreateOrder(ctx, pgordersqry.CreateOrderParams{
+		UserID:    orderData.UserID,
+		Status:    orderData.Status,
+		CreatedAt: orderData.CreatedAt,
+		UpdatedAt: orderData.UpdatedAt,
+	})
+	if err != nil {
 		return 0, fmt.Errorf("query fail: %w", err)
 	}
 
 	itemsData := itemsToDTO(orderID, order.Items)
 
-	_, err = tx.CopyFrom(ctx, pgx.Identifier{"orders", "order_items"}, []string{"sku_id", "order_id", "count", "created_at", "updated_at"},
-		pgx.CopyFromSlice(len(itemsData), func(i int) ([]any, error) {
-			return []any{itemsData[i].SKU, itemsData[i].OrderID, itemsData[i].Count, itemsData[i].CreatedAt, itemsData[i].UpdatedAt}, nil
-		}))
+	_, err = qtx.InsertOrderItems(ctx, itemsData)
 	if err != nil {
 		return 0, fmt.Errorf("query fail: %w", err)
 	}
@@ -82,11 +87,11 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 				SET status=$1, updated_at=$2
 				WHERE id=$3`
 
+	// sqlc не умеет возвращать commandTag (нужен для обработки ошибки)
 	tag, err := or.Pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
 	if err != nil {
 		return err
 	}
-
 	if tag.RowsAffected() == 0 {
 		return models.ErrOrderNotFound
 	}
@@ -95,20 +100,7 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 }
 
 func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) {
-	orderQry := `SELECT id, user_id, status
-					FROM orders.orders
-					WHERE id=$1`
-	itemsQry := `SELECT sku_id, order_id, count
-					FROM orders.order_items
-					WHERE order_id=$1`
-
-	orderRows, err := or.Pool.Query(ctx, orderQry, orderID)
-	if err != nil {
-		return models.Order{}, err
-	}
-	defer orderRows.Close()
-
-	oderData, err := pgx.CollectOneRow(orderRows, pgx.RowToStructByName[orderDTO])
+	oderData, err := or.queries.GetOrderById(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.Order{}, models.ErrOrderNotFound
@@ -116,13 +108,7 @@ func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.O
 		return models.Order{}, err
 	}
 
-	itemRows, err := or.Pool.Query(ctx, itemsQry, orderID)
-	if err != nil {
-		return models.Order{}, err
-	}
-	defer itemRows.Close()
-
-	itemsData, err := pgx.CollectRows(itemRows, pgx.RowToStructByName[itemDTO])
+	itemsData, err := or.queries.GetOrderItems(ctx, orderID)
 	if err != nil {
 		return models.Order{}, err
 	}

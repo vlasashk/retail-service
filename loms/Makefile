@@ -42,6 +42,10 @@ cover-folder:
 .vendor-rm:
 	rm -rf vendor-proto
 
+.PHONY: sqlc-gen
+sqlc-gen:
+	sqlc generate -f sqlc.yaml
+
 # Устанавливаем необходимые бинарники для компиляции
 # Для начала установить protoc через brew install protobuf или по-другому под вашу ОС
 # При выполнении команды может быть ошибка "GOPROXY list is not the empty string, but contains no entries"
