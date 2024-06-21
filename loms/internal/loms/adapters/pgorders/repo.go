@@ -9,42 +9,58 @@ import (
 	"route256/loms/config"
 	"route256/loms/internal/loms/adapters/pgorders/pgordersqry"
 	"route256/loms/internal/loms/models"
+	"route256/loms/pkg/pgcluster"
 	"route256/loms/pkg/pgconnect"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 type OrdersRepo struct {
-	Pool    *pgxpool.Pool
-	queries *pgordersqry.Queries
+	Cluster *pgcluster.Cluster
 }
 
 func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (*OrdersRepo, error) {
-	url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+	masterURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.User,
 		cfg.Password,
-		cfg.Host,
-		cfg.Port,
+		cfg.HostMaster,
+		cfg.PortMaster,
 		cfg.Name)
 
-	pool, err := pgconnect.Connect(ctx, url, logger)
+	slaveURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.User,
+		cfg.Password,
+		cfg.HostSlave,
+		cfg.PortSlave,
+		cfg.Name)
+
+	masterPool, err := pgconnect.Connect(ctx, masterURL, logger)
 	if err != nil {
 		return nil, err
 	}
 
+	slavePool, err := pgconnect.Connect(ctx, slaveURL, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := pgcluster.New().SetWriter(masterPool).AddReader(masterPool, slavePool)
+
 	return &OrdersRepo{
-		Pool:    pool,
-		queries: pgordersqry.New(pool),
+		Cluster: cluster,
 	}, nil
 }
 
 func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, error) {
 	orderData := orderToDTO(order)
+	pool, err := or.Cluster.GetWriter()
+	if err != nil {
+		return 0, err
+	}
 
-	tx, err := or.Pool.Begin(ctx)
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("connection acquire fail: %w", err)
 	}
@@ -56,7 +72,8 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
 		}
 	}()
 
-	qtx := or.queries.WithTx(tx)
+	// Каждый раз создается через New() что бы можно было подменять пулл из кластера
+	qtx := pgordersqry.New(tx)
 
 	orderID, err := qtx.CreateOrder(ctx, pgordersqry.CreateOrderParams{
 		UserID:    orderData.UserID,
@@ -86,9 +103,13 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 	qry := `UPDATE orders.orders
 				SET status=$1, updated_at=$2
 				WHERE id=$3`
+	pool, err := or.Cluster.GetWriter()
+	if err != nil {
+		return err
+	}
 
 	// sqlc не умеет возвращать commandTag (нужен для обработки ошибки)
-	tag, err := or.Pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
+	tag, err := pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
 	if err != nil {
 		return err
 	}
@@ -100,7 +121,14 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 }
 
 func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) {
-	oderData, err := or.queries.GetOrderById(ctx, orderID)
+	pool, err := or.Cluster.GetReader()
+	if err != nil {
+		return models.Order{}, err
+	}
+
+	qPool := pgordersqry.New(pool)
+
+	oderData, err := qPool.GetOrderById(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.Order{}, models.ErrOrderNotFound
@@ -108,7 +136,7 @@ func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.O
 		return models.Order{}, err
 	}
 
-	itemsData, err := or.queries.GetOrderItems(ctx, orderID)
+	itemsData, err := qPool.GetOrderItems(ctx, orderID)
 	if err != nil {
 		return models.Order{}, err
 	}
@@ -117,6 +145,6 @@ func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.O
 }
 
 func (or *OrdersRepo) Close() error {
-	or.Pool.Close()
+	or.Cluster.Close()
 	return nil
 }

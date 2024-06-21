@@ -18,19 +18,23 @@ type HTTPGateCfg struct {
 }
 
 type OrdersRepoCfg struct {
-	Host     string `env:"ORDERS_DB_HOST" env-default:"localhost"`
-	Port     string `env:"ORDERS_DB_PORT" env-default:"5432"`
-	Name     string `env:"ORDERS_DB_NAME" env-default:"postgres"`
-	User     string `env:"ORDERS_DB_USER" env-default:"postgres"`
-	Password string `env:"ORDERS_DB_PASSWORD" env-required:"true"`
+	HostMaster string `env:"ORDERS_DB_MASTER_HOST" env-default:"localhost"`
+	PortMaster string `env:"ORDERS_DB_MASTER_PORT" env-default:"5432"`
+	HostSlave  string `env:"ORDERS_DB_SLAVE_HOST" env-default:"localhost"`
+	PortSlave  string `env:"ORDERS_DB_SLAVE_PORT" env-default:"5433"`
+	Name       string `env:"ORDERS_DB_NAME" env-default:"postgres"`
+	User       string `env:"ORDERS_DB_USER" env-default:"postgres"`
+	Password   string `env:"ORDERS_DB_PASSWORD" env-required:"true"`
 }
 
 type StocksRepoCfg struct {
-	Host     string `env:"STOCKS_DB_HOST" env-default:"localhost"`
-	Port     string `env:"STOCKS_DB_PORT" env-default:"5432"`
-	Name     string `env:"STOCKS_DB_NAME" env-default:"postgres"`
-	User     string `env:"STOCKS_DB_USER" env-default:"postgres"`
-	Password string `env:"STOCKS_DB_PASSWORD" env-required:"true"`
+	HostMaster string `env:"STOCKS_DB_MASTER_HOST" env-default:"localhost"`
+	PortMaster string `env:"STOCKS_DB_MASTER_PORT" env-default:"5432"`
+	HostSlave  string `env:"STOCKS_DB_SLAVE_HOST" env-default:"localhost"`
+	PortSlave  string `env:"STOCKS_DB_SLAVE_PORT" env-default:"5433"`
+	Name       string `env:"STOCKS_DB_NAME" env-default:"postgres"`
+	User       string `env:"STOCKS_DB_USER" env-default:"postgres"`
+	Password   string `env:"STOCKS_DB_PASSWORD" env-required:"true"`
 }
 
 func New() (Config, error) {

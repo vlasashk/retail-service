@@ -61,21 +61,21 @@
 				
 				<option value="file2">route256/loms/internal/loms/adapters/pgorders/pgordersqry/copyfrom.go (90.0%)</option>
 				
-				<option value="file3">route256/loms/internal/loms/adapters/pgorders/pgordersqry/db.go (100.0%)</option>
+				<option value="file3">route256/loms/internal/loms/adapters/pgorders/pgordersqry/db.go (50.0%)</option>
 				
 				<option value="file4">route256/loms/internal/loms/adapters/pgorders/pgordersqry/models.go (23.1%)</option>
 				
 				<option value="file5">route256/loms/internal/loms/adapters/pgorders/pgordersqry/queries.sql.go (85.7%)</option>
 				
-				<option value="file6">route256/loms/internal/loms/adapters/pgorders/repo.go (76.2%)</option>
+				<option value="file6">route256/loms/internal/loms/adapters/pgorders/repo.go (75.4%)</option>
 				
-				<option value="file7">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/db.go (100.0%)</option>
+				<option value="file7">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/db.go (50.0%)</option>
 				
 				<option value="file8">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/models.go (0.0%)</option>
 				
 				<option value="file9">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/queries.sql.go (100.0%)</option>
 				
-				<option value="file10">route256/loms/internal/loms/adapters/pgstocks/repo.go (70.9%)</option>
+				<option value="file10">route256/loms/internal/loms/adapters/pgstocks/repo.go (71.4%)</option>
 				
 				<option value="file11">route256/loms/internal/loms/adapters/stocksmem/stocks.go (0.0%)</option>
 				
@@ -373,7 +373,7 @@ type DBTX interface {
         CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
 }
 
-func New(db DBTX) *Queries <span class="cov1" title="1">{
+func New(db DBTX) *Queries <span class="cov10" title="16">{
         return &amp;Queries{db: db}
 }</span>
 
@@ -381,7 +381,7 @@ type Queries struct {
         db DBTX
 }
 
-func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov10" title="4">{
+func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov0" title="0">{
         return &amp;Queries{
                 db: tx,
         }
@@ -581,42 +581,58 @@ import (
         "route256/loms/config"
         "route256/loms/internal/loms/adapters/pgorders/pgordersqry"
         "route256/loms/internal/loms/models"
+        "route256/loms/pkg/pgcluster"
         "route256/loms/pkg/pgconnect"
 
         "github.com/jackc/pgx/v5"
-        "github.com/jackc/pgx/v5/pgxpool"
         "github.com/rs/zerolog"
         "github.com/rs/zerolog/log"
 )
 
 type OrdersRepo struct {
-        Pool    *pgxpool.Pool
-        queries *pgordersqry.Queries
+        Cluster *pgcluster.Cluster
 }
 
 func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (*OrdersRepo, error) <span class="cov1" title="1">{
-        url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+        masterUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
                 cfg.User,
                 cfg.Password,
-                cfg.Host,
-                cfg.Port,
+                cfg.HostMaster,
+                cfg.PortMaster,
                 cfg.Name)
 
-        pool, err := pgconnect.Connect(ctx, url, logger)
+        slaveUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+                cfg.User,
+                cfg.Password,
+                cfg.HostSlave,
+                cfg.PortSlave,
+                cfg.Name)
+
+        masterPool, err := pgconnect.Connect(ctx, masterUrl, logger)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov1" title="1">return &amp;OrdersRepo{
-                Pool:    pool,
-                queries: pgordersqry.New(pool),
+        <span class="cov1" title="1">slavePool, err := pgconnect.Connect(ctx, slaveUrl, logger)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">cluster := pgcluster.New().SetWriter(masterPool).AddReader(masterPool, slavePool)
+
+        return &amp;OrdersRepo{
+                Cluster: cluster,
         }, nil</span>
 }
 
 func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, error) <span class="cov6" title="4">{
         orderData := orderToDTO(order)
+        pool, err := or.Cluster.GetWriter()
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
 
-        tx, err := or.Pool.Begin(ctx)
+        <span class="cov6" title="4">tx, err := pool.Begin(ctx)
         if err != nil </span><span class="cov0" title="0">{
                 return 0, fmt.Errorf("connection acquire fail: %w", err)
         }</span>
@@ -628,7 +644,8 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
                 }
         }()
 
-        <span class="cov6" title="4">qtx := or.queries.WithTx(tx)
+        // Каждый раз создается через New() что бы можно было подменять пулл из кластера
+        <span class="cov6" title="4">qtx := pgordersqry.New(tx)
 
         orderID, err := qtx.CreateOrder(ctx, pgordersqry.CreateOrderParams{
                 UserID:    orderData.UserID,
@@ -658,9 +675,13 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
         qry := `UPDATE orders.orders
                                 SET status=$1, updated_at=$2
                                 WHERE id=$3`
+        pool, err := or.Cluster.GetWriter()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
 
         // sqlc не умеет возвращать commandTag (нужен для обработки ошибки)
-        tag, err := or.Pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
+        <span class="cov8" title="7">tag, err := pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
         if err != nil </span><span class="cov0" title="0">{
                 return err
         }</span>
@@ -672,7 +693,14 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 }
 
 func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) <span class="cov10" title="12">{
-        oderData, err := or.queries.GetOrderById(ctx, orderID)
+        pool, err := or.Cluster.GetReader()
+        if err != nil </span><span class="cov0" title="0">{
+                return models.Order{}, err
+        }</span>
+
+        <span class="cov10" title="12">qPool := pgordersqry.New(pool)
+
+        oderData, err := qPool.GetOrderById(ctx, orderID)
         if err != nil </span><span class="cov4" title="3">{
                 if errors.Is(err, pgx.ErrNoRows) </span><span class="cov4" title="3">{
                         return models.Order{}, models.ErrOrderNotFound
@@ -680,7 +708,7 @@ func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.O
                 <span class="cov0" title="0">return models.Order{}, err</span>
         }
 
-        <span class="cov8" title="9">itemsData, err := or.queries.GetOrderItems(ctx, orderID)
+        <span class="cov8" title="9">itemsData, err := qPool.GetOrderItems(ctx, orderID)
         if err != nil </span><span class="cov0" title="0">{
                 return models.Order{}, err
         }</span>
@@ -689,7 +717,7 @@ func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.O
 }
 
 func (or *OrdersRepo) Close() error <span class="cov1" title="1">{
-        or.Pool.Close()
+        or.Cluster.Close()
         return nil
 }</span>
 </pre>
@@ -713,7 +741,7 @@ type DBTX interface {
         QueryRow(context.Context, string, ...interface{}) pgx.Row
 }
 
-func New(db DBTX) *Queries <span class="cov1" title="1">{
+func New(db DBTX) *Queries <span class="cov10" title="15">{
         return &amp;Queries{db: db}
 }</span>
 
@@ -721,7 +749,7 @@ type Queries struct {
         db DBTX
 }
 
-func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov10" title="7">{
+func (q *Queries) WithTx(tx pgx.Tx) *Queries <span class="cov0" title="0">{
         return &amp;Queries{
                 db: tx,
         }
@@ -918,41 +946,58 @@ import (
         "route256/loms/config"
         "route256/loms/internal/loms/adapters/pgstocks/pgstocksqry"
         "route256/loms/internal/loms/models"
+        "route256/loms/pkg/pgcluster"
         "route256/loms/pkg/pgconnect"
 
         "github.com/jackc/pgx/v5"
-        "github.com/jackc/pgx/v5/pgxpool"
         "github.com/rs/zerolog"
         "github.com/rs/zerolog/log"
         "golang.org/x/net/context"
 )
 
 type StocksRepo struct {
-        Pool    *pgxpool.Pool
-        queries *pgstocksqry.Queries
+        Cluster *pgcluster.Cluster
 }
 
 func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (*StocksRepo, error) <span class="cov1" title="1">{
-        url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+        masterUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
                 cfg.User,
                 cfg.Password,
-                cfg.Host,
-                cfg.Port,
+                cfg.HostMaster,
+                cfg.PortMaster,
                 cfg.Name)
 
-        pool, err := pgconnect.Connect(ctx, url, logger)
+        slaveUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+                cfg.User,
+                cfg.Password,
+                cfg.HostSlave,
+                cfg.PortSlave,
+                cfg.Name)
+
+        masterPool, err := pgconnect.Connect(ctx, masterUrl, logger)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov1" title="1">return &amp;StocksRepo{
-                Pool:    pool,
-                queries: pgstocksqry.New(pool),
+        <span class="cov1" title="1">slavePool, err := pgconnect.Connect(ctx, slaveUrl, logger)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">cluster := pgcluster.New().SetWriter(masterPool).AddReader(masterPool, slavePool)
+
+        return &amp;StocksRepo{
+                Cluster: cluster,
         }, nil</span>
 }
 
 func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <span class="cov7" title="4">{
-        tx, err := s.Pool.Begin(ctx)
+        pool, err := s.Cluster.GetWriter()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov7" title="4">tx, err := pool.Begin(ctx)
         if err != nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("connection acquire fail: %w", err)
         }</span>
@@ -964,7 +1009,8 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <spa
                 }
         }()
 
-        <span class="cov7" title="4">qtx := s.queries.WithTx(tx)
+        // Каждый раз создается через New() что бы можно было подменять пулл из кластера
+        <span class="cov7" title="4">qtx := pgstocksqry.New(tx)
 
         for _, item := range order.Items </span><span class="cov7" title="5">{
                 var stocksData pgstocksqry.RetrieveStockForUpdateRow
@@ -999,7 +1045,12 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <spa
 }
 
 func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) error <span class="cov1" title="1">{
-        tx, err := s.Pool.Begin(ctx)
+        pool, err := s.Cluster.GetWriter()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov1" title="1">tx, err := pool.Begin(ctx)
         if err != nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("connection acquire fail: %w", err)
         }</span>
@@ -1011,7 +1062,7 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
                 }
         }()
 
-        <span class="cov1" title="1">qtx := s.queries.WithTx(tx)
+        <span class="cov1" title="1">qtx := pgstocksqry.New(tx)
 
         for _, item := range order.Items </span><span class="cov1" title="1">{
                 var stocksData pgstocksqry.RetrieveStockForUpdateRow
@@ -1046,7 +1097,12 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) error <span class="cov4" title="2">{
-        tx, err := s.Pool.Begin(ctx)
+        pool, err := s.Cluster.GetWriter()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov4" title="2">tx, err := pool.Begin(ctx)
         if err != nil </span><span class="cov0" title="0">{
                 return fmt.Errorf("connection acquire fail: %w", err)
         }</span>
@@ -1058,7 +1114,7 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
                 }
         }()
 
-        <span class="cov4" title="2">qtx := s.queries.WithTx(tx)
+        <span class="cov4" title="2">qtx := pgstocksqry.New(tx)
 
         for _, item := range order.Items </span><span class="cov7" title="4">{
                 var stocksData pgstocksqry.RetrieveStockForUpdateRow
@@ -1093,7 +1149,12 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) <span class="cov10" title="8">{
-        stocksData, err := s.queries.GetStockBySKU(ctx, int64(skuID))
+        pool, err := s.Cluster.GetReader()
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+
+        <span class="cov10" title="8">stocksData, err := pgstocksqry.New(pool).GetStockBySKU(ctx, int64(skuID))
         if err != nil </span><span class="cov1" title="1">{
                 if errors.Is(err, pgx.ErrNoRows) </span><span class="cov1" title="1">{
                         return 0, models.ErrItemNotFound
@@ -1103,6 +1164,11 @@ func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) 
 
         <span class="cov9" title="7">return stocksData.Available - stocksData.Reserved, nil</span>
 }
+
+func (s *StocksRepo) Close() error <span class="cov1" title="1">{
+        s.Cluster.Close()
+        return nil
+}</span>
 </pre>
 		
 		<pre class="file" id="file11" style="display: none">package stocksmem
@@ -1765,23 +1831,23 @@ type Resources struct {
         stopResources []func() error
 }
 
-func New(ctx context.Context, cfg config.Config) (Resources, error) <span class="cov8" title="1">{
+func New(ctx context.Context, cfg config.Config) (Resources, error) <span class="cov1" title="1">{
         log, err := logger.New(cfg.LoggerLVL)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
 
-        <span class="cov8" title="1">stockStorage, err := pgstocks.New(ctx, cfg.StocksRepo, log)
+        <span class="cov1" title="1">stockStorage, err := pgstocks.New(ctx, cfg.StocksRepo, log)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
 
-        <span class="cov8" title="1">orderStorage, err := pgorders.New(ctx, cfg.OrdersRepo, log)
+        <span class="cov1" title="1">orderStorage, err := pgorders.New(ctx, cfg.OrdersRepo, log)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
 
-        <span class="cov8" title="1">return Resources{
+        <span class="cov1" title="1">return Resources{
                 Log: log,
                 UseCase: usecase.New(
                         log,
@@ -1790,12 +1856,13 @@ func New(ctx context.Context, cfg config.Config) (Resources, error) <span class=
                 ),
                 stopResources: []func() error{
                         orderStorage.Close,
+                        stockStorage.Close,
                 },
         }, nil</span>
 }
 
-func (r Resources) Stop() <span class="cov8" title="1">{
-        for _, stop := range r.stopResources </span><span class="cov8" title="1">{
+func (r Resources) Stop() <span class="cov1" title="1">{
+        for _, stop := range r.stopResources </span><span class="cov10" title="2">{
                 if err := stop(); err != nil </span><span class="cov0" title="0">{
                         r.Log.Error().Err(err).Send()
                 }</span>

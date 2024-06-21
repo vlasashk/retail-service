@@ -44,6 +44,7 @@ func New(ctx context.Context, cfg config.Config) (Resources, error) {
 		),
 		stopResources: []func() error{
 			orderStorage.Close,
+			stockStorage.Close,
 		},
 	}, nil
 }

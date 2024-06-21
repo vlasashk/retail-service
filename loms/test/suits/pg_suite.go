@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"route256/loms/config"
 	"route256/loms/internal/loms"
@@ -25,6 +26,8 @@ import (
 )
 
 const migrationsPath = "../../migrations"
+
+var sleepDur = time.Millisecond * 10
 
 type PostgresSuit struct {
 	suite.Suite
@@ -66,8 +69,8 @@ func (s *PostgresSuit) SetupSuite() {
 	url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.OrdersRepo.User,
 		cfg.OrdersRepo.Password,
-		cfg.OrdersRepo.Host,
-		cfg.OrdersRepo.Port,
+		cfg.OrdersRepo.HostMaster,
+		cfg.OrdersRepo.PortMaster,
 		cfg.OrdersRepo.Name)
 
 	s.pool, err = pgconnect.Connect(ctx, url, zerolog.New(os.Stderr))
@@ -266,6 +269,7 @@ func (s *PostgresSuit) TestOrderCreate() {
 		s.Run(tt.name, func() {
 			createResp, err := s.client.OrderCreate(context.Background(), tt.req)
 			s.ErrorIs(err, tt.expectErr)
+			time.Sleep(sleepDur) // Что бы избежать чтение незакомиченного изменения из реплики
 
 			if tt.expectErr == nil {
 				infoResp, err := s.client.OrderInfo(context.Background(), &lomsservicev1.OrderInfoRequest{
@@ -353,6 +357,7 @@ func (s *PostgresSuit) TestOrderCancel() {
 			request := tt.req()
 			_, err := s.client.OrderCancel(context.Background(), request)
 			s.ErrorIs(err, tt.expectErr)
+			time.Sleep(sleepDur) // Что бы избежать чтение незакомиченного изменения из реплики
 
 			if tt.expectErr == nil {
 				infoResp, err := s.client.OrderInfo(context.Background(), &lomsservicev1.OrderInfoRequest{
@@ -480,6 +485,7 @@ func (s *PostgresSuit) TestOrderPay() {
 			request := tt.req()
 			_, err = s.client.OrderPay(context.Background(), request)
 			s.ErrorIs(err, tt.expectErr)
+			time.Sleep(sleepDur) // Что бы избежать чтение незакомиченного изменения из реплики
 
 			if tt.expectErr == nil {
 				infoResp, err := s.client.OrderInfo(context.Background(), &lomsservicev1.OrderInfoRequest{

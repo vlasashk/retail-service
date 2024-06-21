@@ -1,8 +1,9 @@
 export PG_PASS=postgres
 export PG_USER=postgres
 export PG_DB=postgres
-export PG_HOST=loms_db:5432
+export PG_HOST=pg_master:5432
 
+.PHONY: build-all
 build-all:
 	cd cart && make build
 	cd loms && make build
@@ -11,6 +12,11 @@ build-all:
 run-all:
 	docker compose up --force-recreate --build -d
 
+.PHONY: up
+up:
+	docker compose up -d
+
+.PHONY: down
 down:
 	docker compose down
 
@@ -20,7 +26,7 @@ up-cart-env:
 
 .PHONY: up-loms-env
 up-loms-env:
-	docker compose up -d --wait loms_db loms_migration
+	docker compose up -d --wait pg_master pg_slave migration
 
 .PHONY: cart-integration-test
 cart-integration-test: export STOCKS_DB_PASSWORD=$(PG_PASS)

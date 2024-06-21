@@ -7,41 +7,58 @@ import (
 	"route256/loms/config"
 	"route256/loms/internal/loms/adapters/pgstocks/pgstocksqry"
 	"route256/loms/internal/loms/models"
+	"route256/loms/pkg/pgcluster"
 	"route256/loms/pkg/pgconnect"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/context"
 )
 
 type StocksRepo struct {
-	Pool    *pgxpool.Pool
-	queries *pgstocksqry.Queries
+	Cluster *pgcluster.Cluster
 }
 
 func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (*StocksRepo, error) {
-	url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+	masterURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.User,
 		cfg.Password,
-		cfg.Host,
-		cfg.Port,
+		cfg.HostMaster,
+		cfg.PortMaster,
 		cfg.Name)
 
-	pool, err := pgconnect.Connect(ctx, url, logger)
+	slaveURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.User,
+		cfg.Password,
+		cfg.HostSlave,
+		cfg.PortSlave,
+		cfg.Name)
+
+	masterPool, err := pgconnect.Connect(ctx, masterURL, logger)
 	if err != nil {
 		return nil, err
 	}
 
+	slavePool, err := pgconnect.Connect(ctx, slaveURL, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	cluster := pgcluster.New().SetWriter(masterPool).AddReader(masterPool, slavePool)
+
 	return &StocksRepo{
-		Pool:    pool,
-		queries: pgstocksqry.New(pool),
+		Cluster: cluster,
 	}, nil
 }
 
 func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
-	tx, err := s.Pool.Begin(ctx)
+	pool, err := s.Cluster.GetWriter()
+	if err != nil {
+		return err
+	}
+
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("connection acquire fail: %w", err)
 	}
@@ -53,7 +70,8 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
 		}
 	}()
 
-	qtx := s.queries.WithTx(tx)
+	// Каждый раз создается через New() что бы можно было подменять пулл из кластера
+	qtx := pgstocksqry.New(tx)
 
 	for _, item := range order.Items {
 		var stocksData pgstocksqry.RetrieveStockForUpdateRow
@@ -88,7 +106,12 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
 }
 
 func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) error {
-	tx, err := s.Pool.Begin(ctx)
+	pool, err := s.Cluster.GetWriter()
+	if err != nil {
+		return err
+	}
+
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("connection acquire fail: %w", err)
 	}
@@ -100,7 +123,7 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 		}
 	}()
 
-	qtx := s.queries.WithTx(tx)
+	qtx := pgstocksqry.New(tx)
 
 	for _, item := range order.Items {
 		var stocksData pgstocksqry.RetrieveStockForUpdateRow
@@ -135,7 +158,12 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) error {
-	tx, err := s.Pool.Begin(ctx)
+	pool, err := s.Cluster.GetWriter()
+	if err != nil {
+		return err
+	}
+
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("connection acquire fail: %w", err)
 	}
@@ -147,7 +175,7 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 		}
 	}()
 
-	qtx := s.queries.WithTx(tx)
+	qtx := pgstocksqry.New(tx)
 
 	for _, item := range order.Items {
 		var stocksData pgstocksqry.RetrieveStockForUpdateRow
@@ -182,7 +210,12 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) {
-	stocksData, err := s.queries.GetStockBySKU(ctx, int64(skuID))
+	pool, err := s.Cluster.GetReader()
+	if err != nil {
+		return 0, err
+	}
+
+	stocksData, err := pgstocksqry.New(pool).GetStockBySKU(ctx, int64(skuID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, models.ErrItemNotFound
@@ -191,4 +224,9 @@ func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) 
 	}
 
 	return stocksData.Available - stocksData.Reserved, nil
+}
+
+func (s *StocksRepo) Close() error {
+	s.Cluster.Close()
+	return nil
 }
