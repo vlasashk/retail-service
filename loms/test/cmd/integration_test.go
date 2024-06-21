@@ -11,5 +11,5 @@ import (
 )
 
 func TestSuite(t *testing.T) {
-	suite.Run(t, new(suits.InmemSuite))
+	suite.Run(t, new(suits.PostgresSuit))
 }

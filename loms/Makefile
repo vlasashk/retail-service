@@ -18,7 +18,7 @@ lint:
 
 # Сперва сгенерировать proto контракт .protoc-generate-server
 .PHONY: unit-test
-unit-test:
+unit-test: cover-folder
 	go test -race -coverprofile ./coverage/cover.out ./internal/... && \
     go tool cover -html=./coverage/cover.out -o ./coverage/cover.html && \
     open ./coverage/cover.html && \
@@ -27,16 +27,24 @@ unit-test:
 .PHONY: integration-test
 #https://github.com/golang/go/issues/65653
 integration-test: export GOEXPERIMENT=nocoverageredesign
-integration-test: .protoc-generate-server
+integration-test: .protoc-generate-server cover-folder
 	go test -race -tags=integration -coverprofile ./coverage/cover.out -coverpkg ./internal/... ./... && \
 	go tool cover -html=./coverage/cover.out -o ./coverage/cover.html && \
 	open ./coverage/cover.html && \
 	rm ./coverage/cover.out
 
+.PHONY: cover-folder
+cover-folder:
+	mkdir -p ./coverage
+
 # Удаляем директорию vendor-proto
 .PHONY: .vendor-rm
 .vendor-rm:
 	rm -rf vendor-proto
+
+.PHONY: sqlc-gen
+sqlc-gen:
+	sqlc generate -f sqlc.yaml
 
 # Устанавливаем необходимые бинарники для компиляции
 # Для начала установить protoc через brew install protobuf или по-другому под вашу ОС
