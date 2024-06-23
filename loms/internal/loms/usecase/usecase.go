@@ -43,6 +43,7 @@ func New(
 
 func (uc *UseCase) OrderCreate(ctx context.Context, order models.Order) (int64, error) {
 	var err error
+	order.Status = models.NewStatus
 
 	orderID, err := uc.orders.Create(ctx, order)
 	if err != nil {

@@ -1,9 +1,11 @@
 package resources
 
 import (
+	"context"
+
 	"route256/loms/config"
-	"route256/loms/internal/loms/adapters/ordersmem"
-	"route256/loms/internal/loms/adapters/stocksmem"
+	"route256/loms/internal/loms/adapters/pgorders"
+	"route256/loms/internal/loms/adapters/pgstocks"
 	"route256/loms/internal/loms/usecase"
 
 	"route256/loms/pkg/logger"
@@ -17,18 +19,21 @@ type Resources struct {
 	stopResources []func() error
 }
 
-func New(cfg config.Config) (Resources, error) {
+func New(ctx context.Context, cfg config.Config) (Resources, error) {
 	log, err := logger.New(cfg.LoggerLVL)
 	if err != nil {
 		return Resources{}, err
 	}
 
-	stockStorage, err := stocksmem.New()
+	stockStorage, err := pgstocks.New(ctx, cfg.StocksRepo, log)
 	if err != nil {
 		return Resources{}, err
 	}
 
-	orderStorage := ordersmem.New()
+	orderStorage, err := pgorders.New(ctx, cfg.OrdersRepo, log)
+	if err != nil {
+		return Resources{}, err
+	}
 
 	return Resources{
 		Log: log,
@@ -37,7 +42,10 @@ func New(cfg config.Config) (Resources, error) {
 			orderStorage,
 			stockStorage,
 		),
-		stopResources: []func() error{},
+		stopResources: []func() error{
+			orderStorage.Close,
+			stockStorage.Close,
+		},
 	}, nil
 }
 

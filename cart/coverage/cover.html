@@ -1501,7 +1501,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
         <span class="cov6" title="8">close(itemChan)
         wg.Wait()
 
-        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov5" title="6">{
+        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov6" title="7">{
                 return cart.Items[i].SkuID &lt; cart.Items[j].SkuID
         }</span>)
 

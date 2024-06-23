@@ -4,11 +4,18 @@ package suits
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"time"
 
 	"route256/loms/config"
 	"route256/loms/internal/loms"
 	lomsservicev1 "route256/loms/pkg/api/loms/v1"
+	"route256/loms/pkg/migration"
+	"route256/loms/pkg/pgconnect"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
@@ -18,15 +25,20 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type InmemSuite struct {
+const migrationsPath = "../../migrations"
+
+var sleepDur = time.Millisecond * 10
+
+type PostgresSuit struct {
 	suite.Suite
 	client   lomsservicev1.LOMSClient
 	conn     *grpc.ClientConn
 	cancel   context.CancelFunc
+	pool     *pgxpool.Pool
 	orderIDs []int64
 }
 
-func (s *InmemSuite) SetupSuite() {
+func (s *PostgresSuit) SetupSuite() {
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancel = cancel
 
@@ -54,50 +66,115 @@ func (s *InmemSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 
+	url := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.OrdersRepo.User,
+		cfg.OrdersRepo.Password,
+		cfg.OrdersRepo.HostMaster,
+		cfg.OrdersRepo.PortMaster,
+		cfg.OrdersRepo.Name)
+
+	s.pool, err = pgconnect.Connect(ctx, url, zerolog.New(os.Stderr))
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	if err = migration.Up(s.pool, migrationsPath); err != nil {
+		s.T().Fatal(err)
+	}
+	s.TearDownTest()
 }
 
-func (s *InmemSuite) TearDownSuite() {
+func (s *PostgresSuit) TearDownSuite() {
 	s.cancel()
 	if s.conn != nil {
 		_ = s.conn.Close()
 	}
+
+	if err := migration.Down(s.pool, migrationsPath); err != nil {
+		s.T().Fatal(err)
+	}
+	s.pool.Close()
 }
 
-// setupOrders вставляются 2 заказа на 3 SKU и база принимает следующий вид
+// setUpOrders вставляются 2 заказа на 3 SKU и база принимает следующий вид
 // 1076963 - В stock-data.json 100 всего и 50 зарезервировано - 50 доступно
 // 1148162 - В stock-data.json 150 всего и 50 зарезервировано - 100 доступно
 // 1625903 - В stock-data.json 200 всего и 100 зарезервировано - 100 доступно
-func (s *InmemSuite) setupOrders() {
-	firstOrderID, err := s.client.OrderCreate(context.Background(), additionalReq)
-	s.Require().NoError(err)
-	secondOrderID, err := s.client.OrderCreate(context.Background(), defaultReq)
-	s.Require().NoError(err)
+func (s *PostgresSuit) setUpOrders() {
+	createOrderQry := `INSERT INTO orders.orders (user_id, status)
+							VALUES ($1, $2)
+							RETURNING id;`
+	createItemQry := `INSERT INTO orders.order_items (sku_id, order_id, count)
+							VALUES ($1, $2, $3);`
 
-	s.orderIDs = append(s.orderIDs, firstOrderID.OrderID, secondOrderID.OrderID)
-}
-
-func (s *InmemSuite) removeOrders(skuIDs ...int64) {
-	for _, skuID := range skuIDs {
-		_, err := s.client.OrderCancel(context.Background(), &lomsservicev1.OrderCancelRequest{
-			OrderID: skuID,
-		})
+	var firstOrderID, secondOrderID int64
+	ctx := context.Background()
+	err := s.pool.QueryRow(ctx, createOrderQry, additionalReq.User, "AwaitingPayment").Scan(&firstOrderID)
+	s.Require().NoError(err)
+	for _, item := range additionalReq.Items {
+		_, err = s.pool.Exec(ctx, createItemQry, item.Sku, firstOrderID, item.Count)
 		s.Require().NoError(err)
 	}
+
+	err = s.pool.QueryRow(ctx, createOrderQry, defaultReq.User, "AwaitingPayment").Scan(&secondOrderID)
+	s.Require().NoError(err)
+	for _, item := range defaultReq.Items {
+		_, err = s.pool.Exec(ctx, createItemQry, item.Sku, secondOrderID, item.Count)
+		s.Require().NoError(err)
+	}
+
+	// updating stocks according to previous orders
+	initStocks := `INSERT INTO stocks.stocks (id, available, reserved)
+						VALUES (1076963, 100, 50),
+							   (1148162, 150, 50),
+							   (1625903, 200, 100),
+							   (2618151, 50, 5)
+						ON CONFLICT (id) DO UPDATE
+						  SET available = EXCLUDED.available,
+							  reserved  = EXCLUDED.reserved;`
+	_, err = s.pool.Exec(context.Background(), initStocks)
+	s.Require().NoError(err)
+
+	s.orderIDs = append(s.orderIDs, firstOrderID, secondOrderID)
 }
 
-func (s *InmemSuite) TestOrderInfo() {
+// SetupTest initializes default stock amount
+func (s *PostgresSuit) SetupTest() {
+	initStocks := `INSERT INTO stocks.stocks (id, available, reserved)
+					VALUES (1076963, 100, 10),
+					       (1148162, 150, 20),
+					       (1625903, 200, 30),
+					       (2618151, 50, 5)
+						ON CONFLICT (id) DO UPDATE
+						  SET available = EXCLUDED.available,
+							  reserved  = EXCLUDED.reserved;`
+	_, err := s.pool.Exec(context.Background(), initStocks)
+	s.Require().NoError(err)
+}
+
+func (s *PostgresSuit) TearDownTest() {
+	_, err := s.pool.Exec(context.Background(), "TRUNCATE TABLE orders.order_items;")
+	s.Require().NoError(err)
+	_, err = s.pool.Exec(context.Background(), "DELETE FROM orders.orders;")
+	s.Require().NoError(err)
+
+	// return default stocks amount to db
+	s.SetupTest()
+}
+
+func (s *PostgresSuit) TestOrderInfo() {
 	tests := []struct {
 		name       string
 		req        func() *lomsservicev1.OrderInfoRequest
 		setup      func()
-		cleanup    func(...int64)
+		cleanup    func()
 		expectErr  error
 		expectResp *lomsservicev1.OrderInfoResponse
 	}{
 		{
 			name:    "OrderInfoSuccess",
-			setup:   s.setupOrders,
-			cleanup: s.removeOrders,
+			setup:   s.setUpOrders,
+			cleanup: s.TearDownTest,
 			req: func() *lomsservicev1.OrderInfoRequest {
 				// Так как используем сетапер то ожидаем что создалось 2 заказа
 				s.Require().Len(s.orderIDs, 2)
@@ -114,9 +191,9 @@ func (s *InmemSuite) TestOrderInfo() {
 		},
 		{
 			name: "OrderInfoNotFoundItemFail",
-			// Не используем сетапер что бы спровоцирвать ошибку
+			// Не используем сетапер что бы спровоцировать ошибку
 			setup:   func() {},
-			cleanup: func(_ ...int64) {},
+			cleanup: func() {},
 			req: func() *lomsservicev1.OrderInfoRequest {
 				return &lomsservicev1.OrderInfoRequest{
 					OrderID: 1111,
@@ -137,18 +214,17 @@ func (s *InmemSuite) TestOrderInfo() {
 
 			s.True(proto.Equal(tt.expectResp, orderResp))
 			if tt.expectErr == nil {
-				tt.cleanup(s.orderIDs...)
+				tt.cleanup()
 				s.orderIDs = []int64{}
 			}
 		})
 	}
 }
 
-func (s *InmemSuite) TestOrderCreate() {
+func (s *PostgresSuit) TestOrderCreate() {
 	tests := []struct {
 		name       string
 		req        *lomsservicev1.OrderCreateRequest
-		cleanup    func(...int64)
 		expectErr  error
 		expectResp *lomsservicev1.OrderInfoResponse
 	}{
@@ -160,7 +236,6 @@ func (s *InmemSuite) TestOrderCreate() {
 				Items:  defaultReq.Items,
 				Status: lomsservicev1.Status_STATUS_AWAITING_PAYMENT,
 			},
-			cleanup: s.removeOrders,
 		},
 		{
 			name: "OrderCreateNotFoundItemFail",
@@ -194,9 +269,9 @@ func (s *InmemSuite) TestOrderCreate() {
 		s.Run(tt.name, func() {
 			createResp, err := s.client.OrderCreate(context.Background(), tt.req)
 			s.ErrorIs(err, tt.expectErr)
+			time.Sleep(sleepDur) // Что бы избежать чтение незакомиченного изменения из реплики
 
 			if tt.expectErr == nil {
-
 				infoResp, err := s.client.OrderInfo(context.Background(), &lomsservicev1.OrderInfoRequest{
 					OrderID: createResp.OrderID,
 				})
@@ -204,25 +279,25 @@ func (s *InmemSuite) TestOrderCreate() {
 
 				s.True(proto.Equal(tt.expectResp, infoResp))
 
-				tt.cleanup(createResp.OrderID)
+				s.TearDownTest()
 			}
 		})
 	}
 }
 
-func (s *InmemSuite) TestOrderCancel() {
+func (s *PostgresSuit) TestOrderCancel() {
 	tests := []struct {
 		name       string
 		req        func() *lomsservicev1.OrderCancelRequest
 		setup      func()
-		cleanup    func(...int64)
+		cleanup    func()
 		expectErr  error
 		expectResp *lomsservicev1.OrderInfoResponse
 	}{
 		{
 			name:    "OrderCancelSuccess",
-			setup:   s.setupOrders,
-			cleanup: s.removeOrders,
+			setup:   s.setUpOrders,
+			cleanup: s.TearDownTest,
 			req: func() *lomsservicev1.OrderCancelRequest {
 				s.Require().Len(s.orderIDs, 2)
 				req := &lomsservicev1.OrderCancelRequest{
@@ -243,7 +318,7 @@ func (s *InmemSuite) TestOrderCancel() {
 		{
 			name:    "OrderCancelOrderNotFoundFail",
 			setup:   func() {},
-			cleanup: func(_ ...int64) {},
+			cleanup: func() {},
 			req: func() *lomsservicev1.OrderCancelRequest {
 				return &lomsservicev1.OrderCancelRequest{
 					OrderID: 1111,
@@ -253,8 +328,8 @@ func (s *InmemSuite) TestOrderCancel() {
 		},
 		{
 			name:    "OrderCancelAlreadyCancelledFail",
-			setup:   s.setupOrders,
-			cleanup: s.removeOrders,
+			setup:   s.setUpOrders,
+			cleanup: s.TearDownTest,
 			req: func() *lomsservicev1.OrderCancelRequest {
 				s.Require().Len(s.orderIDs, 2)
 
@@ -282,6 +357,7 @@ func (s *InmemSuite) TestOrderCancel() {
 			request := tt.req()
 			_, err := s.client.OrderCancel(context.Background(), request)
 			s.ErrorIs(err, tt.expectErr)
+			time.Sleep(sleepDur) // Что бы избежать чтение незакомиченного изменения из реплики
 
 			if tt.expectErr == nil {
 				infoResp, err := s.client.OrderInfo(context.Background(), &lomsservicev1.OrderInfoRequest{
@@ -292,14 +368,14 @@ func (s *InmemSuite) TestOrderCancel() {
 				s.True(proto.Equal(tt.expectResp, infoResp))
 			}
 
-			tt.cleanup(s.orderIDs...)
+			tt.cleanup()
 			// Обнуляем список созданных заказов в tt.setup()
 			s.orderIDs = []int64{}
 		})
 	}
 }
 
-func (s *InmemSuite) TestStocksInfo() {
+func (s *PostgresSuit) TestStocksInfo() {
 	tests := []struct {
 		name       string
 		req        *lomsservicev1.StocksInfoRequest
@@ -336,7 +412,7 @@ func (s *InmemSuite) TestStocksInfo() {
 
 // TestOrderPay для этого теста берем SKU который не сможем откатить (paySKUID)
 // поэтому нужно следить за порядком выполнения этого теста и отслеживать стоки
-func (s *InmemSuite) TestOrderPay() {
+func (s *PostgresSuit) TestOrderPay() {
 	var commonOrderID int64
 
 	items := []*lomsservicev1.Item{
@@ -409,6 +485,7 @@ func (s *InmemSuite) TestOrderPay() {
 			request := tt.req()
 			_, err = s.client.OrderPay(context.Background(), request)
 			s.ErrorIs(err, tt.expectErr)
+			time.Sleep(sleepDur) // Что бы избежать чтение незакомиченного изменения из реплики
 
 			if tt.expectErr == nil {
 				infoResp, err := s.client.OrderInfo(context.Background(), &lomsservicev1.OrderInfoRequest{
@@ -422,7 +499,6 @@ func (s *InmemSuite) TestOrderPay() {
 			available, err = s.client.StocksInfo(context.Background(), &lomsservicev1.StocksInfoRequest{Sku: paySKUID})
 			s.NoError(err, tt.expectErr)
 			s.Equal(tt.availableAfter, available.Count)
-
 		})
 	}
 }
