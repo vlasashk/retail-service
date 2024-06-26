@@ -59,47 +59,51 @@
 				
 				<option value="file1">route256/cart/internal/cart/adapters/inmem/storage.go (100.0%)</option>
 				
-				<option value="file2">route256/cart/internal/cart/adapters/prodservice/prodinfo.go (61.1%)</option>
+				<option value="file2">route256/cart/internal/cart/adapters/prodservice/clientbuilder/client.go (92.3%)</option>
 				
-				<option value="file3">route256/cart/internal/cart/adapters/prodservice/roundtripper/retry.go (58.8%)</option>
+				<option value="file3">route256/cart/internal/cart/adapters/prodservice/prodinfo.go (64.1%)</option>
 				
-				<option value="file4">route256/cart/internal/cart/adapters/stocks/converter.go (100.0%)</option>
+				<option value="file4">route256/cart/internal/cart/adapters/prodservice/roundtripper/ratelimiter.go (80.0%)</option>
 				
-				<option value="file5">route256/cart/internal/cart/adapters/stocks/stocks.go (83.3%)</option>
+				<option value="file5">route256/cart/internal/cart/adapters/prodservice/roundtripper/retry.go (58.8%)</option>
 				
-				<option value="file6">route256/cart/internal/cart/ports/vanilla/handlers/additem/additem.go (95.3%)</option>
+				<option value="file6">route256/cart/internal/cart/adapters/stocks/converter.go (100.0%)</option>
 				
-				<option value="file7">route256/cart/internal/cart/ports/vanilla/handlers/checkout/checkout.go (84.6%)</option>
+				<option value="file7">route256/cart/internal/cart/adapters/stocks/stocks.go (83.3%)</option>
 				
-				<option value="file8">route256/cart/internal/cart/ports/vanilla/handlers/errhandle/errhandle.go (80.0%)</option>
+				<option value="file8">route256/cart/internal/cart/ports/vanilla/handlers/additem/additem.go (95.3%)</option>
 				
-				<option value="file9">route256/cart/internal/cart/ports/vanilla/handlers/getcart/dto.go (100.0%)</option>
+				<option value="file9">route256/cart/internal/cart/ports/vanilla/handlers/checkout/checkout.go (84.6%)</option>
 				
-				<option value="file10">route256/cart/internal/cart/ports/vanilla/handlers/getcart/getcart.go (84.0%)</option>
+				<option value="file10">route256/cart/internal/cart/ports/vanilla/handlers/errhandle/errhandle.go (80.0%)</option>
 				
-				<option value="file11">route256/cart/internal/cart/ports/vanilla/handlers/healthz/healthz.go (80.0%)</option>
+				<option value="file11">route256/cart/internal/cart/ports/vanilla/handlers/getcart/dto.go (100.0%)</option>
 				
-				<option value="file12">route256/cart/internal/cart/ports/vanilla/handlers/removecart/removecart.go (100.0%)</option>
+				<option value="file12">route256/cart/internal/cart/ports/vanilla/handlers/getcart/getcart.go (84.0%)</option>
 				
-				<option value="file13">route256/cart/internal/cart/ports/vanilla/handlers/removeitem/removeitem.go (100.0%)</option>
+				<option value="file13">route256/cart/internal/cart/ports/vanilla/handlers/healthz/healthz.go (80.0%)</option>
 				
-				<option value="file14">route256/cart/internal/cart/ports/vanilla/middleware/logger.go (100.0%)</option>
+				<option value="file14">route256/cart/internal/cart/ports/vanilla/handlers/removecart/removecart.go (100.0%)</option>
 				
-				<option value="file15">route256/cart/internal/cart/ports/vanilla/middleware/recover.go (50.0%)</option>
+				<option value="file15">route256/cart/internal/cart/ports/vanilla/handlers/removeitem/removeitem.go (100.0%)</option>
 				
-				<option value="file16">route256/cart/internal/cart/ports/vanilla/middleware/writer.go (100.0%)</option>
+				<option value="file16">route256/cart/internal/cart/ports/vanilla/middleware/logger.go (100.0%)</option>
 				
-				<option value="file17">route256/cart/internal/cart/ports/vanilla/muxer/mux.go (81.8%)</option>
+				<option value="file17">route256/cart/internal/cart/ports/vanilla/middleware/recover.go (50.0%)</option>
 				
-				<option value="file18">route256/cart/internal/cart/ports/vanilla/router.go (100.0%)</option>
+				<option value="file18">route256/cart/internal/cart/ports/vanilla/middleware/writer.go (100.0%)</option>
 				
-				<option value="file19">route256/cart/internal/cart/resources/resources.go (75.0%)</option>
+				<option value="file19">route256/cart/internal/cart/ports/vanilla/muxer/mux.go (81.8%)</option>
 				
-				<option value="file20">route256/cart/internal/cart/service.go (83.3%)</option>
+				<option value="file20">route256/cart/internal/cart/ports/vanilla/router.go (100.0%)</option>
 				
-				<option value="file21">route256/cart/internal/cart/usecase/usecase.go (100.0%)</option>
+				<option value="file21">route256/cart/internal/cart/resources/resources.go (75.0%)</option>
 				
-				<option value="file22">route256/cart/internal/cart/utils/converter/converter.go (100.0%)</option>
+				<option value="file22">route256/cart/internal/cart/service.go (83.3%)</option>
+				
+				<option value="file23">route256/cart/internal/cart/usecase/usecase.go (100.0%)</option>
+				
+				<option value="file24">route256/cart/internal/cart/utils/converter/converter.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -135,42 +139,42 @@ type cart struct {
         items map[int64]uint16
 }
 
-func newCart() *cart <span class="cov8" title="19">{
+func newCart() *cart <span class="cov6" title="22">{
         return &amp;cart{
                 mu:    sync.RWMutex{},
                 items: make(map[int64]uint16),
         }
 }</span>
 
-func (c *cart) addItem(skuID int64, count uint16) <span class="cov10" title="41">{
+func (c *cart) addItem(skuID int64, count uint16) <span class="cov10" title="192">{
         c.mu.Lock()
         defer c.mu.Unlock()
 
-        if _, ok := c.items[skuID]; ok </span><span class="cov6" title="10">{
+        if _, ok := c.items[skuID]; ok </span><span class="cov6" title="31">{
                 count += c.items[skuID]
         }</span>
 
-        <span class="cov10" title="41">c.items[skuID] = count</span>
+        <span class="cov10" title="192">c.items[skuID] = count</span>
 }
 
-func (c *cart) deleteItem(skuID int64) <span class="cov6" title="11">{
+func (c *cart) deleteItem(skuID int64) <span class="cov8" title="71">{
         c.mu.Lock()
         defer c.mu.Unlock()
 
         delete(c.items, skuID)
 }</span>
 
-func (c *cart) getItems() []models.Item <span class="cov7" title="12">{
+func (c *cart) getItems() []models.Item <span class="cov5" title="15">{
         c.mu.RLock()
         defer c.mu.RUnlock()
 
         res := make([]models.Item, 0, len(c.items))
 
-        for skuID, count := range c.items </span><span class="cov7" title="16">{
+        for skuID, count := range c.items </span><span class="cov9" title="117">{
                 res = append(res, models.Item{SkuID: skuID, Count: count})
         }</span>
 
-        <span class="cov7" title="12">return res</span>
+        <span class="cov5" title="15">return res</span>
 }
 </pre>
 		
@@ -188,27 +192,27 @@ type Storage struct {
         carts map[int64]*cart
 }
 
-func NewStorage() *Storage <span class="cov7" title="17">{
+func NewStorage() *Storage <span class="cov6" title="20">{
         return &amp;Storage{
                 mu:    sync.RWMutex{},
                 carts: make(map[int64]*cart),
         }
 }</span>
 
-func (s *Storage) AddItem(_ context.Context, userID, skuID int64, count uint16) error <span class="cov10" title="41">{
+func (s *Storage) AddItem(_ context.Context, userID, skuID int64, count uint16) error <span class="cov10" title="192">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
-        if _, ok := s.carts[userID]; !ok </span><span class="cov8" title="19">{
+        if _, ok := s.carts[userID]; !ok </span><span class="cov6" title="22">{
                 s.carts[userID] = newCart()
         }</span>
 
-        <span class="cov10" title="41">s.carts[userID].addItem(skuID, count)
+        <span class="cov10" title="192">s.carts[userID].addItem(skuID, count)
 
         return nil</span>
 }
 
-func (s *Storage) DeleteItem(_ context.Context, userID, skuID int64) error <span class="cov7" title="12">{
+func (s *Storage) DeleteItem(_ context.Context, userID, skuID int64) error <span class="cov8" title="72">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
@@ -216,12 +220,12 @@ func (s *Storage) DeleteItem(_ context.Context, userID, skuID int64) error <span
                 return models.ErrCartIsEmpty
         }</span>
 
-        <span class="cov6" title="11">s.carts[userID].deleteItem(skuID)
+        <span class="cov8" title="71">s.carts[userID].deleteItem(skuID)
 
         return nil</span>
 }
 
-func (s *Storage) DeleteItemsByUserID(_ context.Context, userID int64) error <span class="cov6" title="9">{
+func (s *Storage) DeleteItemsByUserID(_ context.Context, userID int64) error <span class="cov4" title="9">{
         s.mu.Lock()
         defer s.mu.Unlock()
 
@@ -229,29 +233,76 @@ func (s *Storage) DeleteItemsByUserID(_ context.Context, userID int64) error <sp
                 return models.ErrCartIsEmpty
         }</span>
 
-        <span class="cov6" title="8">delete(s.carts, userID)
+        <span class="cov4" title="8">delete(s.carts, userID)
 
         return nil</span>
 }
 
-func (s *Storage) GetItemsByUserID(_ context.Context, userID int64) ([]models.Item, error) <span class="cov7" title="15">{
+func (s *Storage) GetItemsByUserID(_ context.Context, userID int64) ([]models.Item, error) <span class="cov5" title="18">{
         s.mu.RLock()
         defer s.mu.RUnlock()
 
-        if _, ok := s.carts[userID]; !ok </span><span class="cov3" title="3">{
+        if _, ok := s.carts[userID]; !ok </span><span class="cov2" title="3">{
                 return nil, models.ErrCartIsEmpty
         }</span>
 
-        <span class="cov7" title="12">items := s.carts[userID].getItems()
-        if len(items) == 0 </span><span class="cov2" title="2">{
+        <span class="cov5" title="15">items := s.carts[userID].getItems()
+        if len(items) == 0 </span><span class="cov2" title="3">{
                 return nil, models.ErrCartIsEmpty
         }</span>
 
-        <span class="cov6" title="10">return items, nil</span>
+        <span class="cov5" title="12">return items, nil</span>
 }
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package prodservice
+		<pre class="file" id="file2" style="display: none">package clientbuilder
+
+import (
+        "net/http"
+        "time"
+)
+
+type RoundTripperMiddleware func(http.RoundTripper) http.RoundTripper
+
+type ClientBuilder struct {
+        client        *http.Client
+        roundTrippers []RoundTripperMiddleware
+}
+
+func New(timeOut time.Duration) *ClientBuilder <span class="cov1" title="1">{
+        return &amp;ClientBuilder{
+                client: &amp;http.Client{
+                        Timeout: timeOut,
+                },
+        }
+}</span>
+func (cb *ClientBuilder) Use(m ...RoundTripperMiddleware) <span class="cov10" title="2">{
+        if cb.roundTrippers == nil </span><span class="cov1" title="1">{
+                cb.roundTrippers = make([]RoundTripperMiddleware, 0, len(m))
+        }</span>
+        <span class="cov10" title="2">cb.roundTrippers = append(cb.roundTrippers, m...)</span>
+}
+
+func (cb *ClientBuilder) Build() *http.Client <span class="cov1" title="1">{
+        roundTripper := chain(http.DefaultTransport, cb.roundTrippers...)
+        cb.client.Transport = roundTripper
+        return cb.client
+}</span>
+
+// chain оборачивает middleware в обратном порядке, так что первый в списке оборачивает все последующие
+func chain(h http.RoundTripper, m ...RoundTripperMiddleware) http.RoundTripper <span class="cov1" title="1">{
+        if len(m) &lt; 1 </span><span class="cov0" title="0">{
+                return h
+        }</span>
+        <span class="cov1" title="1">newHandler := h
+        for i := len(m) - 1; i &gt;= 0; i-- </span><span class="cov10" title="2">{
+                newHandler = m[i](newHandler)
+        }</span>
+        <span class="cov1" title="1">return newHandler</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package prodservice
 
 import (
         "bytes"
@@ -262,6 +313,7 @@ import (
         "net/http"
 
         "route256/cart/config"
+        "route256/cart/internal/cart/adapters/prodservice/clientbuilder"
         "route256/cart/internal/cart/adapters/prodservice/roundtripper"
         "route256/cart/internal/cart/models"
 
@@ -278,14 +330,14 @@ type Client struct {
 
 func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client <span class="cov1" title="1">{
         log.Debug().Str("host", cfg.Address).Msg("creating new product service client")
+        clientBuilder := clientbuilder.New(cfg.Timeout)
+        clientBuilder.Use(roundtripper.Limit(log, cfg.RateLimit, cfg.BurstLimit))
+        clientBuilder.Use(roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry))
         return &amp;Client{
                 baseURL: cfg.Address,
                 token:   cfg.AccessToken,
-                client: &amp;http.Client{
-                        Transport: roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry)(http.DefaultTransport),
-                        Timeout:   cfg.Timeout,
-                },
-                log: log,
+                client:  clientBuilder.Build(),
+                log:     log,
         }
 }</span>
 
@@ -355,7 +407,41 @@ func (c *Client) validateProductResp(resp io.Reader) (models.ItemDescription, er
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package roundtripper
+		<pre class="file" id="file4" style="display: none">package roundtripper
+
+import (
+        "net/http"
+
+        "github.com/rs/zerolog"
+        "golang.org/x/time/rate"
+)
+
+type limiter struct {
+        rateLimiter *rate.Limiter
+        log         zerolog.Logger
+        next        http.RoundTripper
+}
+
+func Limit(log zerolog.Logger, rpsLimit rate.Limit, burstLimit int) func(next http.RoundTripper) http.RoundTripper <span class="cov2" title="2">{
+        return func(next http.RoundTripper) http.RoundTripper </span><span class="cov2" title="2">{
+                return limiter{
+                        rateLimiter: rate.NewLimiter(rpsLimit, burstLimit),
+                        log:         log,
+                        next:        next,
+                }
+        }</span>
+}
+
+func (l limiter) RoundTrip(req *http.Request) (*http.Response, error) <span class="cov10" title="43">{
+        if err := l.rateLimiter.Wait(req.Context()); err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov10" title="43">return l.next.RoundTrip(req)</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package roundtripper
 
 import (
         "net/http"
@@ -412,7 +498,7 @@ func (r retryer) RoundTrip(req *http.Request) (*http.Response, error) <span clas
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package stocks
+		<pre class="file" id="file6" style="display: none">package stocks
 
 import (
         "route256/cart/internal/cart/models"
@@ -442,7 +528,7 @@ func skuIDToDTO(skuID int64) *lomsservicev1.StocksInfoRequest <span class="cov10
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package stocks
+		<pre class="file" id="file7" style="display: none">package stocks
 
 import (
         "context"
@@ -539,7 +625,7 @@ func handleError(err error) error <span class="cov3" title="2">{
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package additem
+		<pre class="file" id="file8" style="display: none">package additem
 
 import (
         "context"
@@ -652,7 +738,7 @@ func parseDataFromReq(log zerolog.Logger, r *http.Request) (itemCountReq, error)
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package checkout
+		<pre class="file" id="file9" style="display: none">package checkout
 
 import (
         "context"
@@ -730,7 +816,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package errhandle
+		<pre class="file" id="file10" style="display: none">package errhandle
 
 import (
         "encoding/json"
@@ -761,7 +847,7 @@ func (resp ErrResp) Send(w http.ResponseWriter, log zerolog.Logger, code int) <s
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package getcart
+		<pre class="file" id="file11" style="display: none">package getcart
 
 import "route256/cart/internal/cart/models"
 
@@ -794,7 +880,7 @@ func itemsToDTO(items models.ItemsInCart) userCartResp <span class="cov7" title=
 }
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package getcart
+		<pre class="file" id="file12" style="display: none">package getcart
 
 import (
         "context"
@@ -868,7 +954,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
 }
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package healthz
+		<pre class="file" id="file13" style="display: none">package healthz
 
 import (
         "encoding/json"
@@ -888,7 +974,7 @@ func HealthCheck(w http.ResponseWriter, _ *http.Request) <span class="cov8" titl
 }
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package removecart
+		<pre class="file" id="file14" style="display: none">package removecart
 
 import (
         "context"
@@ -940,7 +1026,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
 }
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package removeitem
+		<pre class="file" id="file15" style="display: none">package removeitem
 
 import (
         "context"
@@ -994,7 +1080,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) <span class=
 }
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package middleware
+		<pre class="file" id="file16" style="display: none">package middleware
 
 import (
         "bytes"
@@ -1051,7 +1137,7 @@ func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handl
 }
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package middleware
+		<pre class="file" id="file17" style="display: none">package middleware
 
 import (
         "net/http"
@@ -1084,7 +1170,7 @@ func Recover(next http.Handler) http.Handler <span class="cov1" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package middleware
+		<pre class="file" id="file18" style="display: none">package middleware
 
 import (
         "bytes"
@@ -1112,7 +1198,7 @@ func (sw *statusWriter) WriteHeader(statusCode int) <span class="cov8" title="51
 }</span>
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package muxer
+		<pre class="file" id="file19" style="display: none">package muxer
 
 import "net/http"
 
@@ -1155,7 +1241,7 @@ func chain(h http.Handler, m ...Middleware) http.Handler <span class="cov1" titl
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package vanilla
+		<pre class="file" id="file20" style="display: none">package vanilla
 
 import (
         "net/http"
@@ -1196,7 +1282,7 @@ func addRoutes(mux *muxer.MyMux, resources resources.Resources) <span class="cov
 }</span>
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package resources
+		<pre class="file" id="file21" style="display: none">package resources
 
 import (
         "route256/cart/config"
@@ -1252,7 +1338,7 @@ func (r Resources) Stop() <span class="cov8" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package cart
+		<pre class="file" id="file22" style="display: none">package cart
 
 import (
         "context"
@@ -1266,9 +1352,9 @@ import (
         "route256/cart/config"
         "route256/cart/internal/cart/ports/vanilla"
         "route256/cart/internal/cart/resources"
+        "route256/cart/pkg/errorgoup"
 
         "github.com/rs/zerolog/log"
-        "golang.org/x/sync/errgroup"
 )
 
 const gracefulTimeout = 10 * time.Second
@@ -1285,7 +1371,7 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
 
         srv := vanilla.NewServer(cfg, res)
 
-        g, gCtx := errgroup.WithContext(ctx)
+        g, gCtx := errorgoup.WithContext(ctx)
         g.Go(func() error </span><span class="cov8" title="1">{
                 log.Info().Msg(fmt.Sprintf("starting server: %s", cfg.Address))
                 if err = srv.ListenAndServe(); err != nil &amp;&amp; !errors.Is(err, http.ErrServerClosed) </span><span class="cov0" title="0">{
@@ -1311,7 +1397,7 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
 }
 </pre>
 		
-		<pre class="file" id="file21" style="display: none">package usecase
+		<pre class="file" id="file23" style="display: none">package usecase
 
 import (
         "context"
@@ -1321,9 +1407,9 @@ import (
         "time"
 
         "route256/cart/internal/cart/models"
+        "route256/cart/pkg/errorgoup"
 
         "github.com/rs/zerolog/log"
-        "golang.org/x/sync/errgroup"
 )
 
 //go:generate minimock -i cartAdder -p usecase_test
@@ -1476,7 +1562,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
         }()
 
         // errgroup для асинхронного опроса Product Service
-        <span class="cov7" title="10">eg, gCtx := errgroup.WithContext(ctx)
+        <span class="cov7" title="10">eg, gCtx := errorgoup.WithContext(ctx)
         for _, item := range itemSKUs </span><span class="cov8" title="18">{
                 item := item
                 eg.Go(func() error </span><span class="cov8" title="18">{
@@ -1501,7 +1587,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
         <span class="cov6" title="8">close(itemChan)
         wg.Wait()
 
-        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov6" title="7">{
+        sort.Slice(cart.Items, func(i, j int) bool </span><span class="cov5" title="6">{
                 return cart.Items[i].SkuID &lt; cart.Items[j].SkuID
         }</span>)
 
@@ -1509,7 +1595,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
 }
 </pre>
 		
-		<pre class="file" id="file22" style="display: none">package converter
+		<pre class="file" id="file24" style="display: none">package converter
 
 import (
         "strconv"

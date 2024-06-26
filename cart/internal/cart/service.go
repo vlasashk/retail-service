@@ -12,9 +12,9 @@ import (
 	"route256/cart/config"
 	"route256/cart/internal/cart/ports/vanilla"
 	"route256/cart/internal/cart/resources"
+	"route256/cart/pkg/errorgoup"
 
 	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 )
 
 const gracefulTimeout = 10 * time.Second
@@ -31,7 +31,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 
 	srv := vanilla.NewServer(cfg, res)
 
-	g, gCtx := errgroup.WithContext(ctx)
+	g, gCtx := errorgoup.WithContext(ctx)
 	g.Go(func() error {
 		log.Info().Msg(fmt.Sprintf("starting server: %s", cfg.Address))
 		if err = srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
