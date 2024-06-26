@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"route256/cart/config"
+	"route256/cart/internal/cart/adapters/prodservice/clientbuilder"
 	"route256/cart/internal/cart/adapters/prodservice/roundtripper"
 	"route256/cart/internal/cart/models"
 
@@ -25,14 +26,14 @@ type Client struct {
 
 func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client {
 	log.Debug().Str("host", cfg.Address).Msg("creating new product service client")
+	clientBuilder := clientbuilder.New(cfg.Timeout)
+	clientBuilder.Use(roundtripper.Limit(log, cfg.RateLimit, cfg.BurstLimit))
+	clientBuilder.Use(roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry))
 	return &Client{
 		baseURL: cfg.Address,
 		token:   cfg.AccessToken,
-		client: &http.Client{
-			Transport: roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry)(http.DefaultTransport),
-			Timeout:   cfg.Timeout,
-		},
-		log: log,
+		client:  clientBuilder.Build(),
+		log:     log,
 	}
 }
 

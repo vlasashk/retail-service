@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"golang.org/x/time/rate"
 )
 
 type Config struct {
@@ -19,6 +20,8 @@ type ProductProviderCfg struct {
 	Retries          int           `env:"PRODUCT_SERVICE_RETRIES" env-default:"3"`
 	MaxDelayForRetry int           `env:"PRODUCT_SERVICE_RETRY_DELAY" env-default:"3"`
 	Timeout          time.Duration `env:"PRODUCT_SERVICE_TIMEOUT" env-default:"15s"`
+	RateLimit        rate.Limit    `env:"PRODUCT_SERVICE_RATE_LIMIT" env-default:"10"`
+	BurstLimit       int           `env:"PRODUCT_SERVICE_BURST_LIMIT" env-default:"10"`
 }
 
 type StocksProviderCfg struct {

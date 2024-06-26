@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"route256/cart/internal/cart/models"
+	"route256/cart/pkg/errorgoup"
 
 	"github.com/rs/zerolog/log"
-	"golang.org/x/sync/errgroup"
 )
 
 //go:generate minimock -i cartAdder -p usecase_test
@@ -163,7 +163,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
 	}()
 
 	// errgroup для асинхронного опроса Product Service
-	eg, gCtx := errgroup.WithContext(ctx)
+	eg, gCtx := errorgoup.WithContext(ctx)
 	for _, item := range itemSKUs {
 		item := item
 		eg.Go(func() error {

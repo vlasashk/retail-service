@@ -10,6 +10,7 @@ import (
 
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
 type mocksToUse struct {
@@ -42,6 +43,10 @@ func initUseCase(mocks *mocksToUse) *usecase.UseCase {
 		mocks.ProductProvider,
 		mocks.StockProvider,
 	)
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
 
 func TestAddItem(t *testing.T) {
