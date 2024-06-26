@@ -2,12 +2,14 @@ package inmem
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	"route256/cart/internal/cart/models"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
 
 func TestStorage_AddItem(t *testing.T) {
@@ -343,5 +345,91 @@ func TestStorage_GetItemsByUserID(t *testing.T) {
 				assert.ErrorIs(t, err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestStorage_AddItem_Concurrent(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	storage := NewStorage()
+	wg := sync.WaitGroup{}
+	userID := int64(1)
+	itemCount := 100
+
+	for i := range itemCount {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			err := storage.AddItem(context.Background(), userID, int64(i), 1)
+			assert.NoError(t, err)
+		}(i)
+	}
+
+	wg.Wait()
+	items, err := storage.GetItemsByUserID(context.Background(), userID)
+	assert.NoError(t, err)
+	assert.Equal(t, itemCount, len(items))
+}
+
+func TestStorage_DeleteItem_Concurrent(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	storage := NewStorage()
+	userID := int64(1)
+	skuID := int64(1)
+	count := uint16(1)
+
+	err := storage.AddItem(context.Background(), userID, skuID, count)
+	assert.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+	goroutineCount := 10
+
+	for i := 0; i < goroutineCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			//nolint:errcheck // check is not required
+			_ = storage.DeleteItem(context.Background(), userID, skuID)
+		}()
+	}
+
+	wg.Wait()
+	items, err := storage.GetItemsByUserID(context.Background(), userID)
+	assert.ErrorIs(t, err, models.ErrCartIsEmpty)
+	assert.Nil(t, items)
+}
+
+func TestStorage_AddDeleteItem_Concurrent(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	storage := NewStorage()
+	wg := sync.WaitGroup{}
+	userID := int64(1)
+	skuID := int64(1)
+	count := uint16(1)
+
+	// Add and delete items concurrently
+	for i := range 100 {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			if i%2 == 0 {
+				err := storage.AddItem(context.Background(), userID, skuID, count)
+				assert.NoError(t, err)
+			} else {
+				//nolint:errcheck // check is not required
+				_ = storage.DeleteItem(context.Background(), userID, skuID)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	items, err := storage.GetItemsByUserID(context.Background(), userID)
+	// В зависимости от тайминга может быть разный результат (основной упор теста на проверку с помощью флага -race)
+	if err == nil {
+		assert.NotNil(t, items)
+	} else {
+		assert.Equal(t, models.ErrCartIsEmpty, err)
 	}
 }
