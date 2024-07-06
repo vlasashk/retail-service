@@ -28,6 +28,10 @@ up-cart-env:
 up-loms-env:
 	docker compose up -d --wait pg_master pg_slave migration
 
+.PHONY: up-observe
+up-observe:
+	docker compose up -d --wait jaeger grafana prometheus
+
 .PHONY: cart-integration-test
 cart-integration-test: export STOCKS_DB_PASSWORD=$(PG_PASS)
 cart-integration-test: export ORDERS_DB_PASSWORD=$(PG_PASS)

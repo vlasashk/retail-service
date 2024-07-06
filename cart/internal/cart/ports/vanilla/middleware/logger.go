@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"time"
 
+	"route256/cart/pkg/utils"
+
 	"github.com/rs/zerolog"
 )
 
-func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handler {
+func LoggingMiddleware(log zerolog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var requestBody []byte
@@ -21,6 +23,9 @@ func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handl
 					r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 				}
 			}
+			traceID, spanID := utils.ExtractTraceInfo(r.Context())
+			logger := log.With().Str("trace_id", traceID).Str("span_id", spanID).Logger()
+
 			logger.Info().
 				Str("method", r.Method).
 				Str("path", r.URL.Path).
@@ -28,11 +33,13 @@ func LoggingMiddleware(logger zerolog.Logger) func(next http.Handler) http.Handl
 				Bytes("body", requestBody).
 				Any("headers", r.Header).
 				Send()
+
 			ww := &statusWriter{
 				statusCode: http.StatusOK,
 				err:        bytes.NewBuffer(nil),
 				w:          w,
 			}
+
 			defer func(start time.Time) {
 				logResp := logger.With().
 					Int("status_code", ww.statusCode).

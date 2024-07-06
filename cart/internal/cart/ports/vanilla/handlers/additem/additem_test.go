@@ -15,7 +15,6 @@ import (
 	"route256/cart/internal/cart/ports/vanilla/handlers/additem"
 
 	"github.com/gojuno/minimock/v3"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -190,7 +189,7 @@ func TestAddItemHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			tt.mockSetUp(mocks, tt.userID)
 
-			handler := additem.New(zerolog.Logger{}, mocks.Adder)
+			handler := additem.New(mocks.Adder)
 			handler.ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectCode, w.Code)

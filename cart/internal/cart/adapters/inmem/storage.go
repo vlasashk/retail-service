@@ -5,6 +5,20 @@ import (
 	"sync"
 
 	"route256/cart/internal/cart/models"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	cartCount = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "inmem_cart_count",
+		Help: "Current number of carts in the in-memory storage",
+	})
+	skuCount = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "inmem_skus_count",
+		Help: "Current number of SKUs in the in-memory storage in all carts",
+	})
 )
 
 type Storage struct {
@@ -25,6 +39,7 @@ func (s *Storage) AddItem(_ context.Context, userID, skuID int64, count uint16) 
 
 	if _, ok := s.carts[userID]; !ok {
 		s.carts[userID] = newCart()
+		cartCount.Inc()
 	}
 
 	s.carts[userID].addItem(skuID, count)
@@ -40,7 +55,9 @@ func (s *Storage) DeleteItem(_ context.Context, userID, skuID int64) error {
 		return models.ErrCartIsEmpty
 	}
 
-	s.carts[userID].deleteItem(skuID)
+	if s.carts[userID].deleteItem(skuID) {
+		skuCount.Dec()
+	}
 
 	return nil
 }
@@ -53,7 +70,10 @@ func (s *Storage) DeleteItemsByUserID(_ context.Context, userID int64) error {
 		return models.ErrCartIsEmpty
 	}
 
+	skuCount.Sub(float64(s.carts[userID].getItemsAmount()))
+
 	delete(s.carts, userID)
+	cartCount.Dec()
 
 	return nil
 }

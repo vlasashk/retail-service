@@ -14,7 +14,6 @@ import (
 	"route256/cart/internal/cart/ports/vanilla/handlers/checkout"
 
 	"github.com/gojuno/minimock/v3"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -106,7 +105,7 @@ func TestCheckoutCartHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			tt.mockSetUp(mocks, tt.userID)
 
-			handler := checkout.New(zerolog.Logger{}, mocks.Retriever)
+			handler := checkout.New(mocks.Retriever)
 			handler.ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectCode, w.Code)

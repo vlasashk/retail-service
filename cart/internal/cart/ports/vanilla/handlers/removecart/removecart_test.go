@@ -13,7 +13,6 @@ import (
 	"route256/cart/internal/cart/ports/vanilla/handlers/removecart"
 
 	"github.com/gojuno/minimock/v3"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -75,7 +74,7 @@ func TestRemoveCartHandler(t *testing.T) {
 			w := httptest.NewRecorder()
 			tt.mockSetUp(mocks, tt.userID)
 
-			handler := removecart.New(zerolog.Logger{}, mocks.Remover)
+			handler := removecart.New(mocks.Remover)
 			handler.ServeHTTP(w, r)
 
 			assert.Equal(t, tt.expectCode, w.Code)

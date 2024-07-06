@@ -13,15 +13,15 @@ import (
 	"route256/loms/pkg/pgconnect"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"go.opentelemetry.io/otel"
 )
 
 type OrdersRepo struct {
 	Cluster *pgcluster.Cluster
 }
 
-func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (*OrdersRepo, error) {
+func New(ctx context.Context, cfg config.OrdersRepoCfg) (*OrdersRepo, error) {
 	masterURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.User,
 		cfg.Password,
@@ -36,12 +36,12 @@ func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (
 		cfg.PortSlave,
 		cfg.Name)
 
-	masterPool, err := pgconnect.Connect(ctx, masterURL, logger)
+	masterPool, err := pgconnect.Connect(ctx, masterURL)
 	if err != nil {
 		return nil, err
 	}
 
-	slavePool, err := pgconnect.Connect(ctx, slaveURL, logger)
+	slavePool, err := pgconnect.Connect(ctx, slaveURL)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +54,9 @@ func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (
 }
 
 func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "Orders: create")
+	defer span.End()
+
 	orderData := orderToDTO(order)
 	pool, err := or.Cluster.GetWriter()
 	if err != nil {
@@ -100,6 +103,9 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
 }
 
 func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status models.OrderStatus) error {
+	ctx, span := otel.Tracer("").Start(ctx, "Orders: set status")
+	defer span.End()
+
 	qry := `UPDATE orders.orders
 				SET status=$1, updated_at=$2
 				WHERE id=$3`
@@ -121,6 +127,9 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 }
 
 func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "Orders: get by orderID")
+	defer span.End()
+
 	pool, err := or.Cluster.GetReader()
 	if err != nil {
 		return models.Order{}, err

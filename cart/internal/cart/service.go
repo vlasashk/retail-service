@@ -23,7 +23,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 	ctx, cancel := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	res, err := resources.NewResources(cfg)
+	res, err := resources.NewResources(ctx, cfg)
 	if err != nil {
 		return err
 	}
