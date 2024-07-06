@@ -67,7 +67,7 @@
 				
 				<option value="file5">route256/loms/internal/loms/adapters/pgorders/pgordersqry/queries.sql.go (85.7%)</option>
 				
-				<option value="file6">route256/loms/internal/loms/adapters/pgorders/repo.go (75.4%)</option>
+				<option value="file6">route256/loms/internal/loms/adapters/pgorders/repo.go (77.8%)</option>
 				
 				<option value="file7">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/db.go (50.0%)</option>
 				
@@ -75,7 +75,7 @@
 				
 				<option value="file9">route256/loms/internal/loms/adapters/pgstocks/pgstocksqry/queries.sql.go (100.0%)</option>
 				
-				<option value="file10">route256/loms/internal/loms/adapters/pgstocks/repo.go (71.4%)</option>
+				<option value="file10">route256/loms/internal/loms/adapters/pgstocks/repo.go (73.5%)</option>
 				
 				<option value="file11">route256/loms/internal/loms/adapters/stocksmem/stocks.go (0.0%)</option>
 				
@@ -85,23 +85,27 @@
 				
 				<option value="file14">route256/loms/internal/loms/ports/ggrpc/impl/impl.go (100.0%)</option>
 				
-				<option value="file15">route256/loms/internal/loms/ports/ggrpc/interceptors/logger.go (77.8%)</option>
+				<option value="file15">route256/loms/internal/loms/ports/ggrpc/interceptors/logger.go (79.3%)</option>
 				
-				<option value="file16">route256/loms/internal/loms/ports/ggrpc/interceptors/recover.go (66.7%)</option>
+				<option value="file16">route256/loms/internal/loms/ports/ggrpc/interceptors/metrics.go (100.0%)</option>
 				
-				<option value="file17">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
+				<option value="file17">route256/loms/internal/loms/ports/ggrpc/interceptors/recover.go (66.7%)</option>
 				
-				<option value="file18">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
+				<option value="file18">route256/loms/internal/loms/ports/ggrpc/interceptors/validate.go (75.0%)</option>
 				
-				<option value="file19">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
+				<option value="file19">route256/loms/internal/loms/ports/ggrpc/server.go (100.0%)</option>
 				
-				<option value="file20">route256/loms/internal/loms/ports/httpgate/server.go (76.9%)</option>
+				<option value="file20">route256/loms/internal/loms/ports/httpgate/errors.go (0.0%)</option>
 				
-				<option value="file21">route256/loms/internal/loms/resources/resources.go (69.2%)</option>
+				<option value="file21">route256/loms/internal/loms/ports/httpgate/server.go (87.5%)</option>
 				
-				<option value="file22">route256/loms/internal/loms/service.go (82.4%)</option>
+				<option value="file22">route256/loms/internal/loms/resources/resources.go (68.8%)</option>
 				
-				<option value="file23">route256/loms/internal/loms/usecase/usecase.go (100.0%)</option>
+				<option value="file23">route256/loms/internal/loms/service.go (82.4%)</option>
+				
+				<option value="file24">route256/loms/internal/loms/tracing/tracer.go (90.0%)</option>
+				
+				<option value="file25">route256/loms/internal/loms/usecase/usecase.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -585,35 +589,35 @@ import (
         "route256/loms/pkg/pgconnect"
 
         "github.com/jackc/pgx/v5"
-        "github.com/rs/zerolog"
         "github.com/rs/zerolog/log"
+        "go.opentelemetry.io/otel"
 )
 
 type OrdersRepo struct {
         Cluster *pgcluster.Cluster
 }
 
-func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (*OrdersRepo, error) <span class="cov1" title="1">{
-        masterUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+func New(ctx context.Context, cfg config.OrdersRepoCfg) (*OrdersRepo, error) <span class="cov1" title="1">{
+        masterURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
                 cfg.User,
                 cfg.Password,
                 cfg.HostMaster,
                 cfg.PortMaster,
                 cfg.Name)
 
-        slaveUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+        slaveURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
                 cfg.User,
                 cfg.Password,
                 cfg.HostSlave,
                 cfg.PortSlave,
                 cfg.Name)
 
-        masterPool, err := pgconnect.Connect(ctx, masterUrl, logger)
+        masterPool, err := pgconnect.Connect(ctx, masterURL)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov1" title="1">slavePool, err := pgconnect.Connect(ctx, slaveUrl, logger)
+        <span class="cov1" title="1">slavePool, err := pgconnect.Connect(ctx, slaveURL)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
@@ -626,6 +630,9 @@ func New(ctx context.Context, cfg config.OrdersRepoCfg, logger zerolog.Logger) (
 }
 
 func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, error) <span class="cov6" title="4">{
+        ctx, span := otel.Tracer("").Start(ctx, "Orders: create")
+        defer span.End()
+
         orderData := orderToDTO(order)
         pool, err := or.Cluster.GetWriter()
         if err != nil </span><span class="cov0" title="0">{
@@ -672,6 +679,9 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
 }
 
 func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status models.OrderStatus) error <span class="cov8" title="7">{
+        ctx, span := otel.Tracer("").Start(ctx, "Orders: set status")
+        defer span.End()
+
         qry := `UPDATE orders.orders
                                 SET status=$1, updated_at=$2
                                 WHERE id=$3`
@@ -693,6 +703,9 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 }
 
 func (or *OrdersRepo) GetByOrderID(ctx context.Context, orderID int64) (models.Order, error) <span class="cov10" title="12">{
+        ctx, span := otel.Tracer("").Start(ctx, "Orders: get by orderID")
+        defer span.End()
+
         pool, err := or.Cluster.GetReader()
         if err != nil </span><span class="cov0" title="0">{
                 return models.Order{}, err
@@ -950,8 +963,8 @@ import (
         "route256/loms/pkg/pgconnect"
 
         "github.com/jackc/pgx/v5"
-        "github.com/rs/zerolog"
         "github.com/rs/zerolog/log"
+        "go.opentelemetry.io/otel"
         "golang.org/x/net/context"
 )
 
@@ -959,27 +972,27 @@ type StocksRepo struct {
         Cluster *pgcluster.Cluster
 }
 
-func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (*StocksRepo, error) <span class="cov1" title="1">{
-        masterUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+func New(ctx context.Context, cfg config.StocksRepoCfg) (*StocksRepo, error) <span class="cov1" title="1">{
+        masterURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
                 cfg.User,
                 cfg.Password,
                 cfg.HostMaster,
                 cfg.PortMaster,
                 cfg.Name)
 
-        slaveUrl := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+        slaveURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
                 cfg.User,
                 cfg.Password,
                 cfg.HostSlave,
                 cfg.PortSlave,
                 cfg.Name)
 
-        masterPool, err := pgconnect.Connect(ctx, masterUrl, logger)
+        masterPool, err := pgconnect.Connect(ctx, masterURL)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov1" title="1">slavePool, err := pgconnect.Connect(ctx, slaveUrl, logger)
+        <span class="cov1" title="1">slavePool, err := pgconnect.Connect(ctx, slaveURL)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
@@ -992,6 +1005,9 @@ func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (
 }
 
 func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <span class="cov7" title="4">{
+        ctx, span := otel.Tracer("").Start(ctx, "Stocks: reserve")
+        defer span.End()
+
         pool, err := s.Cluster.GetWriter()
         if err != nil </span><span class="cov0" title="0">{
                 return err
@@ -1045,6 +1061,9 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error <spa
 }
 
 func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) error <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("").Start(ctx, "Stocks: reserve remove")
+        defer span.End()
+
         pool, err := s.Cluster.GetWriter()
         if err != nil </span><span class="cov0" title="0">{
                 return err
@@ -1097,6 +1116,9 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) error <span class="cov4" title="2">{
+        ctx, span := otel.Tracer("").Start(ctx, "Stocks: reserve cancel")
+        defer span.End()
+
         pool, err := s.Cluster.GetWriter()
         if err != nil </span><span class="cov0" title="0">{
                 return err
@@ -1149,6 +1171,9 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) <span class="cov10" title="8">{
+        ctx, span := otel.Tracer("").Start(ctx, "Stocks: get by sku")
+        defer span.End()
+
         pool, err := s.Cluster.GetReader()
         if err != nil </span><span class="cov0" title="0">{
                 return 0, err
@@ -1541,6 +1566,8 @@ import (
         "context"
         "time"
 
+        "route256/loms/pkg/utils"
+
         "github.com/rs/zerolog"
         "google.golang.org/grpc"
         "google.golang.org/grpc/codes"
@@ -1549,13 +1576,16 @@ import (
         "google.golang.org/protobuf/proto"
 )
 
-func LoggingInterceptor(logger zerolog.Logger) grpc.UnaryServerInterceptor <span class="cov1" title="1">{
+func LoggingInterceptor(log zerolog.Logger) grpc.UnaryServerInterceptor <span class="cov1" title="1">{
         return func(
                 ctx context.Context,
                 req any,
                 info *grpc.UnaryServerInfo,
                 handler grpc.UnaryHandler,
         ) (resp any, err error) </span><span class="cov10" title="25">{
+                traceID, spanID := utils.ExtractTraceInfo(ctx)
+                logger := log.With().Str("trace_id", traceID).Str("span_id", spanID).Logger()
+
                 logRequest(logger, req, info)
 
                 defer func(start time.Time) </span><span class="cov10" title="25">{
@@ -1625,6 +1655,33 @@ func logResponse(logger zerolog.Logger, timeTaken time.Duration, resp any, info 
 
 import (
         "context"
+        "time"
+
+        "route256/loms/internal/loms/metrics"
+
+        "google.golang.org/grpc"
+        "google.golang.org/grpc/status"
+)
+
+func Metrics(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) <span class="cov10" title="25">{
+        startTime := time.Now()
+
+        resp, err = handler(ctx, req)
+
+        duration := time.Since(startTime).Seconds()
+        statusCode := status.Code(err).String()
+
+        metrics.RequestDuration.WithLabelValues(statusCode, info.FullMethod).Observe(duration)
+        metrics.RequestsTotal.WithLabelValues(statusCode, info.FullMethod).Inc()
+
+        return resp, err
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package interceptors
+
+import (
+        "context"
         "runtime/debug"
 
         "github.com/rs/zerolog"
@@ -1647,7 +1704,7 @@ func RecoverPanic(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler
 }
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package interceptors
+		<pre class="file" id="file18" style="display: none">package interceptors
 
 import (
         "context"
@@ -1671,7 +1728,7 @@ func Validate(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grp
 }
 </pre>
 		
-		<pre class="file" id="file18" style="display: none">package ggrpc
+		<pre class="file" id="file19" style="display: none">package ggrpc
 
 import (
         "route256/loms/config"
@@ -1681,6 +1738,7 @@ import (
         lomsservicev1 "route256/loms/pkg/api/loms/v1"
 
         "github.com/rs/zerolog"
+        "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
         "google.golang.org/grpc"
         "google.golang.org/grpc/health"
         "google.golang.org/grpc/health/grpc_health_v1"
@@ -1707,12 +1765,14 @@ func buildOptions(log zerolog.Logger) []grpc.ServerOption <span class="cov8" tit
                         interceptors.LoggingInterceptor(log),
                         interceptors.RecoverPanic,
                         interceptors.Validate,
+                        interceptors.Metrics,
                 ),
+                grpc.StatsHandler(otelgrpc.NewServerHandler()),
         }
 }</span>
 </pre>
 		
-		<pre class="file" id="file19" style="display: none">package httpgate
+		<pre class="file" id="file20" style="display: none">package httpgate
 
 import (
         "context"
@@ -1764,16 +1824,18 @@ func customErr(w http.ResponseWriter, code int, msg string) <span class="cov0" t
 }
 </pre>
 		
-		<pre class="file" id="file20" style="display: none">package httpgate
+		<pre class="file" id="file21" style="display: none">package httpgate
 
 import (
         "context"
         "net/http"
+        "net/http/pprof"
 
         "route256/loms/config"
         lomsservicev1 "route256/loms/pkg/api/loms/v1"
 
         "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+        "github.com/prometheus/client_golang/prometheus/promhttp"
         "google.golang.org/grpc"
         "google.golang.org/grpc/credentials/insecure"
 )
@@ -1803,14 +1865,32 @@ func New(ctx context.Context, cfg config.HTTPGateCfg) (*http.Server, error) <spa
         // mount the Swagger UI that uses the OpenAPI specification path above
         <span class="cov8" title="1">mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui/", http.FileServer(http.Dir(cfg.SwaggerDirPath))))
 
+        registerPprofHandlers(mux)
+
+        mux.Handle("/metrics", promhttp.Handler())
+
         return &amp;http.Server{
                 Addr:    cfg.Address,
                 Handler: mux,
         }, nil</span>
 }
+
+func registerPprofHandlers(mux *http.ServeMux) <span class="cov8" title="1">{
+        mux.HandleFunc("/debug/pprof/", pprof.Index)
+        mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+        mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+        mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+        mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+        // Register other pprof handlers
+        mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+        mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+        mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+        mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+}</span>
 </pre>
 		
-		<pre class="file" id="file21" style="display: none">package resources
+		<pre class="file" id="file22" style="display: none">package resources
 
 import (
         "context"
@@ -1818,6 +1898,7 @@ import (
         "route256/loms/config"
         "route256/loms/internal/loms/adapters/pgorders"
         "route256/loms/internal/loms/adapters/pgstocks"
+        "route256/loms/internal/loms/tracing"
         "route256/loms/internal/loms/usecase"
 
         "route256/loms/pkg/logger"
@@ -1832,17 +1913,22 @@ type Resources struct {
 }
 
 func New(ctx context.Context, cfg config.Config) (Resources, error) <span class="cov1" title="1">{
-        log, err := logger.New(cfg.LoggerLVL)
+        log, err := logger.New(cfg.LoggerLVL, cfg.ServiceName)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
 
-        <span class="cov1" title="1">stockStorage, err := pgstocks.New(ctx, cfg.StocksRepo, log)
+        <span class="cov1" title="1">stockStorage, err := pgstocks.New(ctx, cfg.StocksRepo)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
 
-        <span class="cov1" title="1">orderStorage, err := pgorders.New(ctx, cfg.OrdersRepo, log)
+        <span class="cov1" title="1">orderStorage, err := pgorders.New(ctx, cfg.OrdersRepo)
+        if err != nil </span><span class="cov0" title="0">{
+                return Resources{}, err
+        }</span>
+
+        <span class="cov1" title="1">trace, err := tracing.New(ctx, cfg.Telemetry)
         if err != nil </span><span class="cov0" title="0">{
                 return Resources{}, err
         }</span>
@@ -1857,12 +1943,13 @@ func New(ctx context.Context, cfg config.Config) (Resources, error) <span class=
                 stopResources: []func() error{
                         orderStorage.Close,
                         stockStorage.Close,
+                        trace.Close,
                 },
         }, nil</span>
 }
 
 func (r Resources) Stop() <span class="cov1" title="1">{
-        for _, stop := range r.stopResources </span><span class="cov10" title="2">{
+        for _, stop := range r.stopResources </span><span class="cov10" title="3">{
                 if err := stop(); err != nil </span><span class="cov0" title="0">{
                         r.Log.Error().Err(err).Send()
                 }</span>
@@ -1870,7 +1957,7 @@ func (r Resources) Stop() <span class="cov1" title="1">{
 }
 </pre>
 		
-		<pre class="file" id="file22" style="display: none">package loms
+		<pre class="file" id="file23" style="display: none">package loms
 
 import (
         "context"
@@ -1901,6 +1988,7 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
         if err != nil </span><span class="cov0" title="0">{
                 return err
         }</span>
+
         <span class="cov8" title="1">res, err := resources.New(ctx, cfg)
         if err != nil </span><span class="cov0" title="0">{
                 return err
@@ -1945,7 +2033,57 @@ func Run(ctx context.Context, cfg config.Config) error <span class="cov8" title=
 }
 </pre>
 		
-		<pre class="file" id="file23" style="display: none">package usecase
+		<pre class="file" id="file24" style="display: none">package tracing
+
+import (
+        "context"
+        "time"
+
+        "route256/loms/config"
+
+        "go.opentelemetry.io/otel"
+        "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+        "go.opentelemetry.io/otel/propagation"
+        "go.opentelemetry.io/otel/sdk/resource"
+        sdktrace "go.opentelemetry.io/otel/sdk/trace"
+        semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
+)
+
+type Tracer struct {
+        *sdktrace.TracerProvider
+}
+
+func New(ctx context.Context, cfg config.TelemetryCfg) (Tracer, error) <span class="cov8" title="1">{
+        exporter, err := otlptracegrpc.New(ctx,
+                otlptracegrpc.WithEndpoint(cfg.Address),
+                otlptracegrpc.WithInsecure(),
+        )
+        if err != nil </span><span class="cov0" title="0">{
+                return Tracer{}, err
+        }</span>
+
+        <span class="cov8" title="1">tp := sdktrace.NewTracerProvider(
+                sdktrace.WithBatcher(exporter),
+                sdktrace.WithResource(resource.NewWithAttributes(
+                        semconv.SchemaURL,
+                        semconv.ServiceNameKey.String(cfg.ServiceName),
+                )),
+        )
+
+        otel.SetTracerProvider(tp)
+        otel.SetTextMapPropagator(propagation.TraceContext{})
+
+        return Tracer{tp}, nil</span>
+}
+
+func (t Tracer) Close() error <span class="cov8" title="1">{
+        ctx, cancel := context.WithTimeout(context.Background(), time.Second*2)
+        defer cancel()
+        return t.Shutdown(ctx)
+}</span>
+</pre>
+		
+		<pre class="file" id="file25" style="display: none">package usecase
 
 import (
         "context"

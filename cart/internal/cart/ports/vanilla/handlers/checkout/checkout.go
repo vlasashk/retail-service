@@ -21,18 +21,16 @@ type CartCheckout interface {
 
 type Handler struct {
 	checkout CartCheckout
-	log      zerolog.Logger
 }
 
-func New(log zerolog.Logger, checkout CartCheckout) *Handler {
+func New(checkout CartCheckout) *Handler {
 	return &Handler{
 		checkout: checkout,
-		log:      log,
 	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "cart_checkout").Logger()
+	localLog := zerolog.Ctx(r.Context()).With().Str("handler", "cart_checkout").Logger()
 
 	userID, err := converter.UserToInt(r.PathValue(constants.UserID))
 	if err != nil {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"route256/loms/pkg/utils"
+
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -12,13 +14,16 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func LoggingInterceptor(logger zerolog.Logger) grpc.UnaryServerInterceptor {
+func LoggingInterceptor(log zerolog.Logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
 		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (resp any, err error) {
+		traceID, spanID := utils.ExtractTraceInfo(ctx)
+		logger := log.With().Str("trace_id", traceID).Str("span_id", spanID).Logger()
+
 		logRequest(logger, req, info)
 
 		defer func(start time.Time) {

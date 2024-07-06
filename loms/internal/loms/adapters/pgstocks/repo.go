@@ -11,8 +11,8 @@ import (
 	"route256/loms/pkg/pgconnect"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/net/context"
 )
 
@@ -20,7 +20,7 @@ type StocksRepo struct {
 	Cluster *pgcluster.Cluster
 }
 
-func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (*StocksRepo, error) {
+func New(ctx context.Context, cfg config.StocksRepoCfg) (*StocksRepo, error) {
 	masterURL := fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.User,
 		cfg.Password,
@@ -35,12 +35,12 @@ func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (
 		cfg.PortSlave,
 		cfg.Name)
 
-	masterPool, err := pgconnect.Connect(ctx, masterURL, logger)
+	masterPool, err := pgconnect.Connect(ctx, masterURL)
 	if err != nil {
 		return nil, err
 	}
 
-	slavePool, err := pgconnect.Connect(ctx, slaveURL, logger)
+	slavePool, err := pgconnect.Connect(ctx, slaveURL)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +53,9 @@ func New(ctx context.Context, cfg config.StocksRepoCfg, logger zerolog.Logger) (
 }
 
 func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
+	ctx, span := otel.Tracer("").Start(ctx, "Stocks: reserve")
+	defer span.End()
+
 	pool, err := s.Cluster.GetWriter()
 	if err != nil {
 		return err
@@ -106,6 +109,9 @@ func (s *StocksRepo) Reserve(ctx context.Context, order models.Order) error {
 }
 
 func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) error {
+	ctx, span := otel.Tracer("").Start(ctx, "Stocks: reserve remove")
+	defer span.End()
+
 	pool, err := s.Cluster.GetWriter()
 	if err != nil {
 		return err
@@ -158,6 +164,9 @@ func (s *StocksRepo) ReserveRemove(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) error {
+	ctx, span := otel.Tracer("").Start(ctx, "Stocks: reserve cancel")
+	defer span.End()
+
 	pool, err := s.Cluster.GetWriter()
 	if err != nil {
 		return err
@@ -210,6 +219,9 @@ func (s *StocksRepo) ReserveCancel(ctx context.Context, order models.Order) erro
 }
 
 func (s *StocksRepo) GetBySKU(ctx context.Context, skuID uint32) (int64, error) {
+	ctx, span := otel.Tracer("").Start(ctx, "Stocks: get by sku")
+	defer span.End()
+
 	pool, err := s.Cluster.GetReader()
 	if err != nil {
 		return 0, err

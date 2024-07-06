@@ -10,8 +10,15 @@ import (
 type Config struct {
 	Address         string `env:"CART_ADDR" env-default:"localhost:8082"`
 	LoggerLVL       string `env:"CART_LOG_LVL" env-default:"debug"`
+	ServiceName     string `env:"SERVICE_NAME" env-default:"cart"`
 	ProductProvider ProductProviderCfg
 	StocksProvider  StocksProviderCfg
+	Telemetry       TelemetryCfg
+}
+
+type TelemetryCfg struct {
+	ServiceName string `env:"SERVICE_NAME" env-default:"cart"`
+	Address     string `env:"TELEMETRY_ADDR" env-default:"localhost:4317"`
 }
 
 type ProductProviderCfg struct {
