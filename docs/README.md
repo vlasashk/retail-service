@@ -20,3 +20,4 @@
 4. [Базы данных](./homework-4)
 5. [Многопоточное программирование](./homework-5)
 6. [SRE и observability](./homework-6)
+7. [Очереди и асинхронное взаимодействие. Apache Kafka](./homework-7)
