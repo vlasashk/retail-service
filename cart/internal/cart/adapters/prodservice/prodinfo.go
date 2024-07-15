@@ -21,23 +21,26 @@ type Client struct {
 	baseURL string
 	token   string
 	client  *http.Client
-	log     zerolog.Logger
 }
 
 func New(cfg config.ProductProviderCfg, log zerolog.Logger) *Client {
 	log.Debug().Str("host", cfg.Address).Msg("creating new product service client")
-	clientBuilder := clientbuilder.New(cfg.Timeout)
-	clientBuilder.Use(roundtripper.Limit(log, cfg.RateLimit, cfg.BurstLimit))
-	clientBuilder.Use(roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry))
+	clientBuilder := clientbuilder.New(cfg.Timeout).
+		Use(roundtripper.Retry(log, cfg.Retries, cfg.MaxDelayForRetry)).
+		Use(roundtripper.Tracing()).
+		Use(roundtripper.Limit(log, cfg.RateLimit, cfg.BurstLimit)).
+		Use(roundtripper.Metrics())
+
 	return &Client{
 		baseURL: cfg.Address,
 		token:   cfg.AccessToken,
 		client:  clientBuilder.Build(),
-		log:     log,
 	}
 }
 
 func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescription, error) {
+	localLog := *zerolog.Ctx(ctx)
+
 	url := fmt.Sprintf("%s/get_product", c.baseURL)
 
 	reqBody := getProductReq{
@@ -47,24 +50,24 @@ func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescript
 
 	data, err := json.Marshal(reqBody)
 	if err != nil {
-		c.log.Error().Err(err).Send()
+		localLog.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(data))
 	if err != nil {
-		c.log.Error().Err(err).Send()
+		localLog.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		c.log.Error().Err(err).Send()
+		localLog.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			c.log.Error().Err(err).Send()
+			localLog.Error().Err(err).Send()
 		}
 	}()
 
@@ -75,24 +78,24 @@ func (c *Client) GetProduct(ctx context.Context, sku int64) (models.ItemDescript
 		return models.ItemDescription{}, fmt.Errorf("failed to fetch item: status %d", resp.StatusCode)
 	}
 
-	return c.validateProductResp(resp.Body)
+	return c.validateProductResp(localLog, resp.Body)
 }
 
-func (c *Client) validateProductResp(resp io.Reader) (models.ItemDescription, error) {
+func (c *Client) validateProductResp(localLog zerolog.Logger, resp io.Reader) (models.ItemDescription, error) {
 	body, err := io.ReadAll(resp)
 	if err != nil {
-		c.log.Error().Err(err).Send()
+		localLog.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 
 	var respBody getProductResp
 	if err = json.Unmarshal(body, &respBody); err != nil {
-		c.log.Error().Err(err).Send()
+		localLog.Error().Err(err).Send()
 		return models.ItemDescription{}, err
 	}
 
 	if err = validator.New(validator.WithRequiredStructEnabled()).Struct(respBody); err != nil {
-		c.log.Error().Err(err).Str("error", models.ErrBadProductInfo.Error()).Send()
+		localLog.Error().Err(err).Str("error", models.ErrBadProductInfo.Error()).Send()
 		return models.ItemDescription{}, models.ErrBadProductData
 	}
 

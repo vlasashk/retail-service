@@ -1,10 +1,13 @@
 package resources
 
 import (
+	"context"
+
 	"route256/cart/config"
 	"route256/cart/internal/cart/adapters/inmem"
 	"route256/cart/internal/cart/adapters/prodservice"
 	"route256/cart/internal/cart/adapters/stocks"
+	"route256/cart/internal/cart/tracing"
 	"route256/cart/internal/cart/usecase"
 	"route256/cart/pkg/logger"
 
@@ -17,8 +20,8 @@ type Resources struct {
 	stopResources []func() error
 }
 
-func NewResources(cfg config.Config) (Resources, error) {
-	log, err := logger.New(cfg.LoggerLVL)
+func NewResources(ctx context.Context, cfg config.Config) (Resources, error) {
+	log, err := logger.New(cfg.LoggerLVL, cfg.ServiceName)
 	if err != nil {
 		return Resources{}, err
 	}
@@ -31,6 +34,11 @@ func NewResources(cfg config.Config) (Resources, error) {
 	inMemStorage := inmem.NewStorage()
 	productProvider := prodservice.New(cfg.ProductProvider, log)
 
+	trace, err := tracing.New(ctx, cfg.Telemetry)
+	if err != nil {
+		return Resources{}, err
+	}
+
 	return Resources{
 		Log: log,
 		UseCase: usecase.New(
@@ -41,7 +49,10 @@ func NewResources(cfg config.Config) (Resources, error) {
 			productProvider,
 			stocksProvider,
 		),
-		stopResources: []func() error{stocksProvider.Close},
+		stopResources: []func() error{
+			stocksProvider.Close,
+			trace.Close,
+		},
 	}, nil
 }
 

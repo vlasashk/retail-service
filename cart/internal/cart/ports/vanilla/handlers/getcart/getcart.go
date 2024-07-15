@@ -21,18 +21,16 @@ type CartRetriever interface {
 
 type Handler struct {
 	retriever CartRetriever
-	log       zerolog.Logger
 }
 
-func New(log zerolog.Logger, retriever CartRetriever) *Handler {
+func New(retriever CartRetriever) *Handler {
 	return &Handler{
 		retriever: retriever,
-		log:       log,
 	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "get_items").Logger()
+	localLog := zerolog.Ctx(r.Context()).With().Str("handler", "get_items").Logger()
 
 	userID, err := converter.UserToInt(r.PathValue(constants.UserID))
 	if err != nil {

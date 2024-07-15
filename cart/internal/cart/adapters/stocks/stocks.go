@@ -5,11 +5,13 @@ import (
 	"log"
 
 	"route256/cart/config"
+	"route256/cart/internal/cart/adapters/stocks/interceptors"
 	"route256/cart/internal/cart/models"
 	lomsservicev1 "route256/cart/pkg/api/loms/v1"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/codes"
@@ -39,6 +41,10 @@ func New(cfg config.StocksProviderCfg, log zerolog.Logger) (*Client, error) {
 			Backoff:           backoffConfig,
 			MinConnectTimeout: cfg.MaxConnTimeout,
 		}),
+		grpc.WithChainUnaryInterceptor(
+			interceptors.Metrics,
+		),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	)
 	if err != nil {
 		return nil, err

@@ -19,11 +19,14 @@ func New(timeOut time.Duration) *ClientBuilder {
 		},
 	}
 }
-func (cb *ClientBuilder) Use(m ...RoundTripperMiddleware) {
+
+func (cb *ClientBuilder) Use(m ...RoundTripperMiddleware) *ClientBuilder {
 	if cb.roundTrippers == nil {
 		cb.roundTrippers = make([]RoundTripperMiddleware, 0, len(m))
 	}
 	cb.roundTrippers = append(cb.roundTrippers, m...)
+
+	return cb
 }
 
 func (cb *ClientBuilder) Build() *http.Client {

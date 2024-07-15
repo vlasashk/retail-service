@@ -19,18 +19,16 @@ type CartRemover interface {
 }
 type Handler struct {
 	cartRemover CartRemover
-	log         zerolog.Logger
 }
 
-func New(log zerolog.Logger, remover CartRemover) *Handler {
+func New(remover CartRemover) *Handler {
 	return &Handler{
 		cartRemover: remover,
-		log:         log,
 	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "remove_cart").Logger()
+	localLog := zerolog.Ctx(r.Context()).With().Str("handler", "remove_cart").Logger()
 
 	userID, err := converter.UserToInt(r.PathValue(constants.UserID))
 	if err != nil {

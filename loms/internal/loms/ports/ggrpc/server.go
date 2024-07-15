@@ -8,6 +8,7 @@ import (
 	lomsservicev1 "route256/loms/pkg/api/loms/v1"
 
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -34,6 +35,8 @@ func buildOptions(log zerolog.Logger) []grpc.ServerOption {
 			interceptors.LoggingInterceptor(log),
 			interceptors.RecoverPanic,
 			interceptors.Validate,
+			interceptors.Metrics,
 		),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	}
 }

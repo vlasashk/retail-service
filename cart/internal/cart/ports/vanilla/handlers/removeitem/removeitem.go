@@ -20,18 +20,16 @@ type ItemRemover interface {
 
 type Handler struct {
 	itemRemover ItemRemover
-	log         zerolog.Logger
 }
 
-func New(log zerolog.Logger, remover ItemRemover) *Handler {
+func New(remover ItemRemover) *Handler {
 	return &Handler{
 		itemRemover: remover,
-		log:         log,
 	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "remove_item").Logger()
+	localLog := zerolog.Ctx(r.Context()).With().Str("handler", "remove_item").Logger()
 
 	userID, errUserID := converter.UserToInt(r.PathValue(constants.UserID))
 	skuID, errSKUiD := converter.SKUtoInt(r.PathValue(constants.SKUid))

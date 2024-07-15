@@ -5,7 +5,6 @@ package suits
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"route256/loms/config"
@@ -15,7 +14,6 @@ import (
 	"route256/loms/pkg/pgconnect"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/suite"
 	"google.golang.org/grpc"
@@ -73,7 +71,7 @@ func (s *PostgresSuit) SetupSuite() {
 		cfg.OrdersRepo.PortMaster,
 		cfg.OrdersRepo.Name)
 
-	s.pool, err = pgconnect.Connect(ctx, url, zerolog.New(os.Stderr))
+	s.pool, err = pgconnect.Connect(ctx, url)
 	if err != nil {
 		s.T().Fatal(err)
 	}

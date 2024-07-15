@@ -1,13 +1,22 @@
 package config
 
-import "github.com/ilyakaznacheev/cleanenv"
+import (
+	"github.com/ilyakaznacheev/cleanenv"
+)
 
 type Config struct {
-	Port       string `env:"LOMS_PORT" env-default:"50000"`
-	LoggerLVL  string `env:"LOMS_LOG_LVL" env-default:"debug"`
-	Gateway    HTTPGateCfg
-	OrdersRepo OrdersRepoCfg
-	StocksRepo StocksRepoCfg
+	Port        string `env:"LOMS_PORT" env-default:"50000"`
+	LoggerLVL   string `env:"LOMS_LOG_LVL" env-default:"debug"`
+	ServiceName string `env:"SERVICE_NAME" env-default:"loms"`
+	Gateway     HTTPGateCfg
+	OrdersRepo  OrdersRepoCfg
+	StocksRepo  StocksRepoCfg
+	Telemetry   TelemetryCfg
+}
+
+type TelemetryCfg struct {
+	ServiceName string `env:"SERVICE_NAME" env-default:"loms"`
+	Address     string `env:"TELEMETRY_ADDR" env-default:"localhost:4317"`
 }
 
 type HTTPGateCfg struct {

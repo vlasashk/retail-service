@@ -23,18 +23,16 @@ type CartAdder interface {
 
 type Handler struct {
 	adder CartAdder
-	log   zerolog.Logger
 }
 
-func New(log zerolog.Logger, adder CartAdder) *Handler {
+func New(adder CartAdder) *Handler {
 	return &Handler{
 		adder: adder,
-		log:   log,
 	}
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	localLog := h.log.With().Str("handler", "add_item").Logger()
+	localLog := zerolog.Ctx(r.Context()).With().Str("handler", "add_item").Logger()
 
 	// Логирование внутри парсера
 	reqData, err := parseDataFromReq(localLog, r)
