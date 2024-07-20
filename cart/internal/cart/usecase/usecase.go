@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"route256/cart/internal/cart/models"
-	"route256/cart/pkg/errorgoup"
+	"route256/cart/pkg/errorgroup"
 
 	"github.com/rs/zerolog/log"
 )
@@ -163,7 +163,7 @@ func calcCart(ctx context.Context, provider productProvider, itemSKUs []models.I
 	}()
 
 	// errgroup для асинхронного опроса Product Service
-	eg, gCtx := errorgoup.WithContext(ctx)
+	eg, gCtx := errorgroup.WithContext(ctx)
 	for _, item := range itemSKUs {
 		item := item
 		eg.Go(func() error {

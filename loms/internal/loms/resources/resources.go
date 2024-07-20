@@ -6,6 +6,7 @@ import (
 	"route256/loms/config"
 	"route256/loms/internal/loms/adapters/pgorders"
 	"route256/loms/internal/loms/adapters/pgstocks"
+	"route256/loms/internal/loms/resources/notifydisp"
 	"route256/loms/internal/loms/tracing"
 	"route256/loms/internal/loms/usecase"
 
@@ -17,6 +18,7 @@ import (
 type Resources struct {
 	Log           zerolog.Logger
 	UseCase       *usecase.UseCase
+	BoxDispatcher *notifydisp.Dispatcher
 	stopResources []func() error
 }
 
@@ -41,6 +43,16 @@ func New(ctx context.Context, cfg config.Config) (Resources, error) {
 		return Resources{}, err
 	}
 
+	writer, err := orderStorage.Cluster.GetWriter()
+	if err != nil {
+		return Resources{}, err
+	}
+
+	dispatcher, err := notifydisp.New(cfg.Dispatcher, writer, log)
+	if err != nil {
+		return Resources{}, err
+	}
+
 	return Resources{
 		Log: log,
 		UseCase: usecase.New(
@@ -48,10 +60,12 @@ func New(ctx context.Context, cfg config.Config) (Resources, error) {
 			orderStorage,
 			stockStorage,
 		),
+		BoxDispatcher: dispatcher,
 		stopResources: []func() error{
 			orderStorage.Close,
 			stockStorage.Close,
 			trace.Close,
+			dispatcher.Close,
 		},
 	}, nil
 }

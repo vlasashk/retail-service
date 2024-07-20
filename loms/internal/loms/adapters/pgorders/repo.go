@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"route256/loms/config"
+	"route256/loms/internal/loms/adapters/notifybox"
 	"route256/loms/internal/loms/adapters/pgorders/pgordersqry"
 	"route256/loms/internal/loms/models"
 	"route256/loms/pkg/pgcluster"
@@ -18,7 +19,8 @@ import (
 )
 
 type OrdersRepo struct {
-	Cluster *pgcluster.Cluster
+	Cluster  *pgcluster.Cluster
+	notifier *notifybox.Notifier
 }
 
 func New(ctx context.Context, cfg config.OrdersRepoCfg) (*OrdersRepo, error) {
@@ -49,7 +51,8 @@ func New(ctx context.Context, cfg config.OrdersRepoCfg) (*OrdersRepo, error) {
 	cluster := pgcluster.New().SetWriter(masterPool).AddReader(masterPool, slavePool)
 
 	return &OrdersRepo{
-		Cluster: cluster,
+		Cluster:  cluster,
+		notifier: notifybox.New(masterPool),
 	}, nil
 }
 
@@ -88,6 +91,13 @@ func (or *OrdersRepo) Create(ctx context.Context, order models.Order) (int64, er
 		return 0, fmt.Errorf("query fail: %w", err)
 	}
 
+	if err = or.notifier.WithTx(tx).CreateEvent(ctx, models.Event{
+		OrderID: orderID,
+		Status:  order.Status.String(),
+	}); err != nil {
+		return 0, fmt.Errorf("event send fail: %w", err)
+	}
+
 	itemsData := itemsToDTO(orderID, order.Items)
 
 	_, err = qtx.InsertOrderItems(ctx, itemsData)
@@ -114,13 +124,36 @@ func (or *OrdersRepo) SetStatus(ctx context.Context, orderID int64, status model
 		return err
 	}
 
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("connection acquire fail: %w", err)
+	}
+	defer func() {
+		if err = tx.Rollback(ctx); err != nil {
+			if !errors.Is(err, pgx.ErrTxClosed) {
+				log.Error().Err(err).Caller().Send()
+			}
+		}
+	}()
+
 	// sqlc не умеет возвращать commandTag (нужен для обработки ошибки)
-	tag, err := pool.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
+	tag, err := tx.Exec(ctx, qry, statusToDTO(status), time.Now(), orderID)
 	if err != nil {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
 		return models.ErrOrderNotFound
+	}
+
+	if err = or.notifier.WithTx(tx).CreateEvent(ctx, models.Event{
+		OrderID: orderID,
+		Status:  status.String(),
+	}); err != nil {
+		return fmt.Errorf("event send fail: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return fmt.Errorf("transaction commit fail: %w", err)
 	}
 
 	return nil
