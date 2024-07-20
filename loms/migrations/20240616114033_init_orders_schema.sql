@@ -9,7 +9,7 @@ CREATE TYPE orders.order_status AS ENUM (
   'Payed',
   'Cancelled',
   'Failed'
-  );
+);
 
 CREATE TABLE IF NOT EXISTS orders.orders (
   id BIGSERIAL PRIMARY KEY,

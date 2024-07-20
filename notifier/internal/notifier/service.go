@@ -1,4 +1,4 @@
-package cart
+package notifier
 
 import (
 	"context"
@@ -9,10 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"route256/cart/config"
-	"route256/cart/internal/cart/ports/vanilla"
-	"route256/cart/internal/cart/resources"
-	"route256/cart/pkg/errorgroup"
+	"route256/notifier/config"
+	"route256/notifier/internal/notifier/ports/vanilla"
+	"route256/notifier/internal/notifier/resources"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/rs/zerolog/log"
 )
@@ -29,15 +30,19 @@ func Run(ctx context.Context, cfg config.Config) error {
 	}
 	defer res.Stop()
 
-	srv := vanilla.NewServer(cfg, res)
+	srv := vanilla.NewServer(cfg)
 
-	g, gCtx := errorgroup.WithContext(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
 		log.Info().Msg(fmt.Sprintf("starting server: %s", cfg.Address))
 		if err = srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return err
 		}
 		return nil
+	})
+	g.Go(func() error {
+		log.Info().Msg(fmt.Sprintf("starting consumer: %s", cfg.Consumer.GroupID))
+		return res.Consumer.Run(gCtx)
 	})
 	g.Go(func() error {
 		<-gCtx.Done()

@@ -1,4 +1,4 @@
-package errorgoup
+package errorgroup
 
 import (
 	"context"

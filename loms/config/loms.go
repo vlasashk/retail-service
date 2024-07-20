@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
@@ -12,6 +14,7 @@ type Config struct {
 	OrdersRepo  OrdersRepoCfg
 	StocksRepo  StocksRepoCfg
 	Telemetry   TelemetryCfg
+	Dispatcher  DispatcherCfg
 }
 
 type TelemetryCfg struct {
@@ -44,6 +47,13 @@ type StocksRepoCfg struct {
 	Name       string `env:"STOCKS_DB_NAME" env-default:"postgres"`
 	User       string `env:"STOCKS_DB_USER" env-default:"postgres"`
 	Password   string `env:"STOCKS_DB_PASSWORD" env-required:"true"`
+}
+
+type DispatcherCfg struct {
+	Brokers   []string      `env:"KAFKA_BROKERS" env-separator:"," env-default:"localhost:9092"`
+	Topic     string        `env:"KAFKA_TOPIC" env-default:"loms.order-events"`
+	Tick      time.Duration `env:"DISPATCHER_TICK" env-default:"5s"`
+	BatchSize int           `env:"DISPATCHER_BATCH_SIZE" env-default:"3"`
 }
 
 func New() (Config, error) {
