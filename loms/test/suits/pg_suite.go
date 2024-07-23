@@ -83,6 +83,7 @@ func (s *PostgresSuit) SetupSuite() {
 }
 
 func (s *PostgresSuit) TearDownSuite() {
+	time.Sleep(1 * time.Second)
 	s.cancel()
 	if s.conn != nil {
 		_ = s.conn.Close()

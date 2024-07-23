@@ -55,6 +55,11 @@ func Run(ctx context.Context, cfg config.Config) error {
 		return nil
 	})
 	g.Go(func() error {
+		log.Info().Msg("starting box dispatcher")
+		res.BoxDispatcher.Run(gCtx)
+		return nil
+	})
+	g.Go(func() error {
 		<-gCtx.Done()
 		log.Info().Msg("Got interruption signal")
 		shutDownCtx, cancel := context.WithTimeout(context.Background(), gracefulTimeout)

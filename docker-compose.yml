@@ -37,6 +37,10 @@ services:
         condition: service_completed_successfully
       jaeger:
         condition: service_started
+      kafka:
+        condition: service_healthy  
+      init-kafka:
+        condition: service_completed_successfully  
     env_file:
       - ./loms/config/docker.env
     environment:
@@ -53,6 +57,24 @@ services:
       retries: 3
       start_period: 30s
       start_interval: 3s
+    networks:
+      - backend
+  
+  notifier:
+    build:
+      context: .
+      dockerfile: ./notifier/cmd/notifier/Dockerfile
+    deploy:
+      replicas: 3 
+    depends_on:
+      kafka:
+        condition: service_healthy
+      init-kafka:
+        condition: service_completed_successfully
+    env_file:
+      - ./notifier/config/docker.env
+    ports:
+      - target: 8099
     networks:
       - backend
   
@@ -137,6 +159,7 @@ services:
       - |
         curl -fsSL https://raw.githubusercontent.com/pressly/goose/master/install.sh | sh && 
         goose -dir=/migrations postgres "postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@$${POSTGRES_HOST}/$${POSTGRES_DB}?sslmode=disable" up
+    restart: no
     networks:
       - backend        
   
@@ -181,6 +204,69 @@ services:
       - "4318:4318" # OTLP collector http
     expose:
       - "4318"
+    networks:
+      - backend
+
+  kafka:
+    container_name: kafka
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+    expose:
+      - '29092'
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: INSIDE://kafka:29092,OUTSIDE://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CFG_LOG_DIRS: /bitnami/kafka/data
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: false
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+    healthcheck:
+      test: [ "CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+      start_interval: 3s
+    networks:
+      - backend
+
+  init-kafka:
+    container_name: init-kafka
+    image: bitnami/kafka:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      kafka-topics.sh --bootstrap-server kafka:29092 --list
+
+      kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists --replication-factor 1 --partitions 2 --topic loms.order-events
+
+      echo 'Successfully created the following topics:'
+      kafka-topics.sh --bootstrap-server kafka:29092 --list
+      "
+    networks:
+      - backend
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8089:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
     networks:
       - backend
 
