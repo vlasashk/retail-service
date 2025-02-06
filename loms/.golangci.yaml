@@ -1,38 +1,43 @@
 linters:
   enable:
-    - typecheck # like the front-end of a Go compiler, parses and type-checks Go code
-    - unused # checks for unused constants, variables, functions and types
-    - errcheck # checking for unchecked errors, these unchecked errors can be critical bugs in some cases
-    - exportloopref # checks for pointers to enclosing loop variables
-    - gosimple # specializes in simplifying a code
-    - ineffassign # detects when assignments to existing variables are not used
-    - staticcheck # is a go vet on steroids, applying a ton of static analysis checks
-    - revive # fast, configurable, extensible, flexible, and beautiful linter for Go, drop-in replacement of golint
-    - asciicheck # Simple linter to check that your code does not contain non-ASCII identifiers.
-    - bidichk # checks for dangerous unicode character sequences
-    - exhaustive # checks exhaustiveness of enum switch statements
-    - errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
-    - nilerr # Finds the code that returns nil even if it checks that the error is not nil.
-    - nilnil # Checks that there is no simultaneous return of nil error and an invalid value.
-    - nolintlint # Reports ill-formed or insufficient nolint directives.
-    - zerologlint # Detects the wrong usage of zerolog that a user forgets to dispatch with Send or Msg.
-    - stylecheck
-    - unconvert
-    - unparam
-    - unused
-    - goconst
-    - gocritic
-    - gocyclo
-    - govet
-    - prealloc
+    - asciicheck      # Simple linter to check that your code does not contain non-ASCII identifiers.
+    - bidichk         # Checks for dangerous unicode character sequences.
+    - bodyclose       # Checks that HTTP response bodies are closed correctly.
+    - copyloopvar     # Checks for pointers to enclosing loop variables.
+    - errcheck        # Checks for unchecked errors, which can lead to critical bugs.
+    - errname         # Ensures consistent naming of error variables.
+    - errorlint       # Finds code that may cause issues with Go 1.13's error wrapping scheme.
+    - exhaustive      # Checks exhaustiveness of enum switch statements.
+    - forcetypeassert # Detects unnecessary or unsafe type assertions.
+    - goconst         # Finds repeated constants that could be replaced by a constant.
+    - gocritic        # Provides diagnostics to check for bugs, performance issues, and code simplifications.
+    - gocyclo         # Computes the cyclomatic complexity of functions.
+    - gofmt           # Checks if code is properly formatted.
+    - gofumpt         # Enforces a stricter format than `gofmt`.
+    - gosimple        # Specializes in simplifying code.
+    - govet           # Reports suspicious constructs, such as Printf calls whose arguments do not align with the format string.
+    - ineffassign     # Detects assignments to variables that are never used.
+    - nilerr          # Finds code that returns nil despite checking if an error is not nil.
+    - nilnil          # Checks for simultaneous return of a nil error and an invalid value.
+    - nolintlint      # Reports ill-formed or insufficient nolint directives.
+    - prealloc        # Finds slice declarations that could potentially be preallocated for performance.
+    - revive          # Fast, configurable, extensible linter for Go; a drop-in replacement for golint.
+    - sqlclosecheck   # Ensures database connections are closed properly.
+    - staticcheck     # A go vet on steroids, applying a ton of static analysis checks.
+    - stylecheck      # Checks for stylistic issues, enforcing idiomatic Go style.
+    - typecheck       # Like the front-end of a Go compiler, parses and type-checks Go code.
+    - unconvert       # Detects redundant type conversions.
+    - unparam         # Reports unused function parameters.
+    - unused          # Checks for unused constants, variables, functions, and types.
+    - zerologlint     # Detects incorrect usage of zerolog where logs aren't dispatched with Send or Msg.
 
 linters-settings:
   gocyclo:
-    min-complexity: 20
+    min-complexity: 15
   gocognit:
     min-complexity: 10
   dupl:
-    threshold: 200
+    threshold: 100
   nakedret:
     max-func-lines: 50
   funlen:
@@ -106,12 +111,13 @@ run:
 output:
   # Sort results by: filepath, line and column.
   sort-results: true
+  print-issued-lines: true
 issues:
   # Maximum issues count per one linter.
   # Set to 0 to disable.
   # Default: 50
-  max-issues-per-linter: 0
+  max-issues-per-linter: 100
   # Maximum count of issues with the same text.
   # Set to 0 to disable.
   # Default: 3
-  max-same-issues: 0
+  max-same-issues: 4

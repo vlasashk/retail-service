@@ -1,9 +1,12 @@
 package config
 
 import (
+	"errors"
+	"os"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/rs/zerolog/log"
 )
 
 type Config struct {
@@ -56,10 +59,26 @@ type DispatcherCfg struct {
 	BatchSize int           `env:"DISPATCHER_BATCH_SIZE" env-default:"3"`
 }
 
-func New() (Config, error) {
-	var res Config
-	if err := cleanenv.ReadEnv(&res); err != nil {
-		return Config{}, err
+// New - parses environment variables
+func New(opts ...Option) (Config, error) {
+	o := defaultOptions()
+
+	for _, opt := range opts {
+		opt.apply(&o)
 	}
-	return res, nil
+
+	var cfg Config
+
+	if err := cleanenv.ReadConfig(o.configPath, &cfg); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return Config{}, err
+		}
+		log.Warn().Err(err).Msg("yaml config file not found")
+
+		if err = cleanenv.ReadEnv(&cfg); err != nil {
+			return Config{}, err
+		}
+	}
+
+	return cfg, nil
 }
